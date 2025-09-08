@@ -1,0 +1,6 @@
+{
+	"version": "0.2",
+	"language": "en",
+	"words": ["NianJiu", "docvault", "turbopack"],
+	"ignorePaths": ["node_modules/**"]
+}

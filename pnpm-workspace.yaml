@@ -1,0 +1,4 @@
+# pnpm-workspace.yaml
+packages:
+  - "packages/*" # 所有子包放在 packages 文件夹下（统一管理）
+  - "!**/node_modules"

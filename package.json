@@ -1,0 +1,16 @@
+{
+	"name": "docvault",
+	"version": "1.0.0",
+	"private": true,
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"devDependencies": {
+		"typescript": "^5.9.2",
+		"@types/node": "^24.3.0",
+		"@biomejs/biome": "^2.2.2"
+	},
+	"author": "NianJiu",
+	"license": "MIT"
+}
