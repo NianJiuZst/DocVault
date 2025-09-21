@@ -18,6 +18,9 @@
 			"recommended": true,
 			"suspicious": {
 				"noUnknownAtRules": "off"
+			},
+			"a11y": {
+				"useButtonType": "off"
 			}
 		}
 	},
