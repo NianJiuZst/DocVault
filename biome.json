@@ -20,7 +20,8 @@
 				"noUnknownAtRules": "off"
 			},
 			"a11y": {
-				"useButtonType": "off"
+				"useButtonType": "off",
+				"noStaticElementInteractions": "off"
 			}
 		}
 	},
