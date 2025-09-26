@@ -1,0 +1,39 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int            @id @default(autoincrement())
+  githubUserId String         @unique // GitHub唯一ID（唯一索引）
+  name         String
+  avatar       String
+  email        String?        // 可选字段
+  documents    Document[]     // 关联文档（一对多）
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+}
+
+model Document {
+  id        Int               @id @default(autoincrement())
+  title     String
+  content   Json              // 富文本内容（对应PostgreSQL的JSONB）
+  userId    Int
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions  DocumentVersion[] // 关联版本（一对多）
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+}
+
+model DocumentVersion {
+  id        Int      @id @default(autoincrement())
+  documentId Int
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  version   Int      // 版本号
+  content   Json     // 版本内容快照
+  updatedAt DateTime @default(now())
+}
