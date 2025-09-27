@@ -12,7 +12,6 @@
 }
 
 @layer base {
-	/* 仅作用于当前组件的样式 */
 	.background {
 		position: fixed;
 		top: 0;
@@ -63,14 +62,17 @@
 		opacity: 0.9;
 		max-width: 1000px;
 		color: #ffffff;
+		margin-left: auto;
+		margin-right: auto;
 	}
 
 	.cards-container {
 		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-		gap: 1.5rem;
-		margin-top: 2rem;
-		margin-bottom: 5vh;
+		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+		gap: 1.2vw;
+		margin: 2rem auto 5vh;
+		padding: 0 2vw;
+		box-sizing: border-box;
 	}
 
 	.card {
@@ -87,6 +89,8 @@
 		backdrop-filter: blur(10px);
 		-webkit-backdrop-filter: blur(10px);
 		z-index: 10;
+		/* 确保卡片宽度不会超过容器 */
+		width: 100%;
 	}
 
 	.card::before {
