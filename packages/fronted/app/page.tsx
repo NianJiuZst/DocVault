@@ -7,7 +7,6 @@ import { debounce } from "es-toolkit";
 
 const SplashScreen: React.FC = () => {
 	const router = useRouter();
-
 	useEffect(() => {
 		console.log("[SplashScreen] useEffect mounted");
 
