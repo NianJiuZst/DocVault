@@ -7,6 +7,8 @@ export const metadata: Metadata = {
 	authors: [
 		{ name: "DocVault", url: "https://github.com/NianJiuZst/DocVault" },
 	],
+	generator: "Next.js",
+	
 };
 
 export default function RootLayout({

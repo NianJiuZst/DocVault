@@ -10,10 +10,18 @@
 	},
 	"dependencies": {
 		"@tailwindcss/postcss": "^4.1.13",
+		"@tiptap/extension-color": "^3.6.1",
+		"@tiptap/extension-heading": "^3.6.1",
+		"@tiptap/extension-highlight": "^3.6.1",
+		"@tiptap/extension-image": "^3.6.1",
+		"@tiptap/extension-text-style": "^3.6.1",
+		"@tiptap/react": "^3.6.1",
+		"@tiptap/starter-kit": "^3.6.1",
 		"es-toolkit": "^1.39.10",
 		"next": "15.5.2",
 		"react": "19.1.1",
-		"react-dom": "19.1.1"
+		"react-dom": "19.1.1",
+		"react-icons": "^5.5.0"
 	},
 	"devDependencies": {
 		"@types/react": "^19",
