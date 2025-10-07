@@ -101,9 +101,9 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 			</div>
 
 			{/* 主内容区域 */}
-			<div className="flex-1 flex flex-col overflow-hidden">
+			<div className="flex-1 flex flex-col overflow-hidden ">
 				<div
-					className="flex items-center px-8 transition-all duration-300"
+					className="flex items-center px-4 transition-all duration-300"
 					style={{
 						height: "10%",
 						backgroundColor: "rgb(251, 252, 246)",
@@ -112,7 +112,7 @@ export default function HomeLayout({ children }: { children: ReactNode }) {
 				>
 					<SearchBar />
 				</div>
-				<main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+				<main className="flex-1 flex overflow-y-auto">{children}</main>
 			</div>
 		</div>
 	);
