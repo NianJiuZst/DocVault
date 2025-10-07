@@ -1,12 +1,13 @@
 "use client";
 import type React from "react";
-import styles from "./page.module.css"; // 重要：现在使用CSS Modules
+import styles from "./page.module.css";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { debounce } from "es-toolkit";
 
 const SplashScreen: React.FC = () => {
 	const router = useRouter();
+
 	useEffect(() => {
 		console.log("[SplashScreen] useEffect mounted");
 
@@ -29,9 +30,9 @@ const SplashScreen: React.FC = () => {
 		const handleScroll = debounce(() => {
 			const { percentage } = calculateScrollPosition();
 			if (percentage >= 90 && !localStorage.getItem("hasScrolledToBottom")) {
-				console.log("[Scroll] Bottom reached! Redirecting to /home/editor");
+				console.log("[Scroll] Bottom reached! Redirecting to /home/cloud-docs");
 				localStorage.setItem("hasScrolledToBottom", "true");
-				router.push("/home/editor");
+				router.push("/home/cloud-docs");
 			}
 		}, 100);
 
@@ -131,19 +132,14 @@ const SplashScreen: React.FC = () => {
 				</div>
 				<p className={styles["scroll-prompt"]}>上滑开启 AI 协同编辑</p>
 				<div className={styles.container}>
-					{/* Chevron 1 */}
 					<div className={`${styles.chevron} ${styles["delay-1"]}`}>
 						<span className={styles.before}></span>
 						<span className={styles.after}></span>
 					</div>
-
-					{/* Chevron 2 */}
 					<div className={`${styles.chevron} ${styles["delay-2"]}`}>
 						<span className={styles.before}></span>
 						<span className={styles.after}></span>
 					</div>
-
-					{/* Chevron 3 */}
 					<div className={styles.chevron}>
 						<span className={styles.before}></span>
 						<span className={styles.after}></span>

@@ -1,105 +1,119 @@
-import type { Metadata } from 'next';
-import { ReactNode } from 'react';
-import SidebarItem from '../components/SidebarItem';
-import SearchBar from '../components/SearchBar';
+"use client";
+import type { ReactNode } from "react";
+import SearchBar from "../components/SearchBar";
+import Image from "next/image";
+import Link from "next/link";
+import { NavigationList } from "../components/navigation";
+import { usePathname } from "next/navigation";
 
-export const metadata: Metadata = {
-  title: 'DocVault',
-  description: '一个优雅宁静的文档协作空间',
-};
+export default function HomeLayout({ children }: { children: ReactNode }) {
+	const pathname = usePathname();
+	return (
+		<div className="flex h-screen bg-gray-50">
+			{/* 侧边栏 */}
+			<div
+				className="
+      static inset-y-0 left-0 w-64 bg-white shadow-sm 
+      border-r border-gray-200 flex flex-col
+    "
+			>
+				{/* Logo 区域 */}
+				<div
+					className="flex items-center px-4 transition-all duration-300"
+					style={{
+						height: "10%",
+						backgroundColor: "rgb(246, 246, 245)",
+						borderBottom: "0.5px solid rgb(200, 204, 208)",
+						minHeight: "80px",
+					}}
+				>
+					<div
+						className="flex items-center justify-center transition-transform duration-200 hover:scale-105"
+						style={{
+							width: "56px",
+							height: "56px",
+							borderRadius: "50%",
+							backgroundColor: "rgb(255, 255, 255)",
+							overflow: "hidden",
+							boxShadow: "0 2px 5px rgba(0,0,0,0.04)",
+							flexShrink: 0,
+							position: "relative",
+						}}
+					>
+						<Image
+							src="/images/logo.png"
+							alt="Logo"
+							fill
+							style={{ objectFit: "cover" }}
+							priority={true}
+						/>
+					</div>
 
-export default function HomeLayout({
-  children,
-}: {
-  children: ReactNode;
-}) {
-  return (
-    <div className="h-screen flex font-sans antialiased">
-      {/* 左侧栏 - 16.67% */}
-      <div
-        className="flex flex-col relative"
-        style={{
-          width: '16.67%',
-          backgroundColor: 'rgb(219, 223, 226)',
-        }}
-      >
-        {/* 左右分隔线 */}
-        <div
-          className="absolute right-0 top-0 w-[0.5px] h-full"
-          style={{ backgroundColor: 'rgb(190, 194, 198)' }}
-        ></div>
+					<span
+						className="ml-3 font-semibold tracking-tight whitespace-nowrap"
+						style={{
+							fontSize: "22px",
+							color: "rgb(96, 92, 88)",
+							lineHeight: "1",
+						}}
+					>
+						DocVault
+					</span>
+				</div>
 
-        {/* Logo 区域 */}
-        <div
-          className="flex items-center px-4 transition-all duration-300"
-          style={{
-            height: '15.4%',
-            backgroundColor: 'rgb(246, 246, 245)',
-            borderBottom: '0.5px solid rgb(200, 204, 208)',
-          }}
-        >
-          <div
-            className="flex items-center justify-center transition-transform duration-200 hover:scale-105"
-            style={{
-              width: '56px',
-              height: '56px',
-              borderRadius: '50%',
-              backgroundColor: 'rgb(255, 255, 255)',
-              overflow: 'hidden',
-              boxShadow: '0 2px 5px rgba(0,0,0,0.04)',
-              flexShrink: 0,
-            }}
-          >
-            <img
-              src="/images/logo.png"
-              alt="Logo"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-              }}
-            />
-          </div>
+				{/* 导航菜单 */}
+				<nav className="flex-1 py-4 overflow-y-auto">
+					<ul className="space-y-1 px-3">
+						{NavigationList.map((item) => {
+							// 精确匹配或为当前路径的子路径
+							const isActive =
+								pathname === item.href || // 完全匹配当前路径
+								pathname.startsWith(`${item.href}/`); // 匹配当前路径的子路径
+							return (
+								<li key={item.name}>
+									<Link
+										href={item.href}
+										className={`
+          group flex items-center px-3 py-2.5 rounded-lg text-sm font-medium
+          transition-all duration-200 ease-in-out
+          ${
+						isActive
+							? "bg-blue-50 text-blue-700 border-r-2 border-blue-700"
+							: "text-gray-700 hover:bg-gray-100 hover:text-gray-900"
+					}
+        `}
+									>
+										<span
+											className={`
+            mr-3 transition-colors duration-200
+            ${isActive ? "text-blue-700" : "text-gray-500 group-hover:text-gray-700"}
+          `}
+										>
+											{item.icon}
+										</span>
+										<span>{item.name}</span>
+									</Link>
+								</li>
+							);
+						})}
+					</ul>
+				</nav>
+			</div>
 
-          <span
-            className="ml-3 font-semibold tracking-tight whitespace-nowrap"
-            style={{
-              fontSize: '22px',
-              color: 'rgb(96, 92, 88)',
-              lineHeight: '1',
-            }}
-          >
-            DocVault
-          </span>
-        </div>
-
-        {/* 菜单列表 */}
-        <div className="flex flex-col p-4 space-y-2" style={{ height: '84.6%' }}>
-          {['云文档', '消息', '日历'].map((item, index) => (
-            <SidebarItem key={item} iconSrc="/images/logo.png" label={item} />
-          ))}
-        </div>
-      </div>
-
-      {/* 右侧容器 */}
-      <div className="w-5/6 flex flex-col">
-        {/* 搜索栏 */}
-        <div
-          className="flex items-center px-8 transition-all duration-300"
-          style={{
-            height: '15.4%',
-            backgroundColor: 'rgb(251, 252, 246)',
-            borderBottom: '0.5px solid rgb(200, 204, 208)',
-          }}
-        >
-          <SearchBar />
-        </div>
-
-        {/* 主内容区 —— 由 page.tsx 提供 */}
-        <div style={{ height: '84.6%', position: 'relative' }}>
-          {children}
-        </div>
-      </div>
-    </div>
-  );
+			{/* 主内容区域 */}
+			<div className="flex-1 flex flex-col overflow-hidden">
+				<div
+					className="flex items-center px-8 transition-all duration-300"
+					style={{
+						height: "10%",
+						backgroundColor: "rgb(251, 252, 246)",
+						borderBottom: "0.5px solid rgb(200, 204, 208)",
+					}}
+				>
+					<SearchBar />
+				</div>
+				<main className="flex-1 overflow-y-auto p-4 sm:p-6">{children}</main>
+			</div>
+		</div>
+	);
 }
