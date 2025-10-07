@@ -4,12 +4,16 @@ import { IoCloudUploadOutline } from "react-icons/io5";
 import { CgTemplate } from "react-icons/cg";
 import { useState } from "react";
 import { FaRegFileAlt } from "react-icons/fa";
+// 1. 导入 Next.js 客户端路由钩子
+import { useRouter } from "next/navigation";
+
 interface Document {
 	id: number;
 	name: string;
 	author: string;
 	lastOpen: string;
 }
+
 const documentData: { [key: string]: Document[] } = {
 	recent: [
 		{
@@ -50,12 +54,7 @@ const documentData: { [key: string]: Document[] } = {
 			author: "刘敏",
 			lastOpen: "2023-10-06 10:05",
 		},
-		{
-			id: 7,
-			name: "设计资源库",
-			author: "周强",
-			lastOpen: "2023-10-05 13:40",
-		},
+		{ id: 7, name: "设计资源库", author: "周强", lastOpen: "2023-10-05 13:40" },
 		{
 			id: 8,
 			name: "测试用例集合",
@@ -90,15 +89,24 @@ const documentData: { [key: string]: Document[] } = {
 		},
 	],
 };
+
 export default function CloudDocsPage() {
 	const [activeTab, setActiveTab] = useState("recent");
+	// 2. 初始化路由实例
+	const router = useRouter();
+	const handleNewDoc = () => {
+		router.push("/home/cloud-docs/1");
+	};
 
 	return (
 		<div className="min-h-screen bg-white flex justify-start flex-col w-full ">
 			<div className="container pl-[4%] py-6 max-w-7xl">
-				{/* 第一行：操作按钮 */}
+				{/* 第一行：操作按钮 - 给“新建”按钮添加 onClick 事件 */}
 				<div className="flex flex-wrap gap-4 mb-8">
-					<button className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
+					<button
+						onClick={handleNewDoc} // 4. 绑定跳转事件
+						className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
+					>
 						<VscNewFile className="h-5 w-5" />
 						<span>新建</span>
 					</button>
@@ -112,7 +120,7 @@ export default function CloudDocsPage() {
 					</button>
 				</div>
 
-				{/* 第二行：选项卡 */}
+				{/* 第二行：选项卡（保持不变） */}
 				<div className="border-b border-gray-200 mb-6">
 					<div className="flex space-x-8">
 						<button
@@ -148,7 +156,7 @@ export default function CloudDocsPage() {
 					</div>
 				</div>
 
-				{/* 文档列表 */}
+				{/* 文档列表（保持不变） */}
 				<div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
 					<div className="divide-y divide-gray-100">
 						{documentData[activeTab].map((doc) => (
@@ -157,7 +165,6 @@ export default function CloudDocsPage() {
 								className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150 flex items-center justify-between"
 							>
 								<div className="flex items-center gap-4">
-									{/* 使用统一的文档图标 */}
 									<FaRegFileAlt className="h-5 w-5 text-gray-600 mt-0.5" />
 									<div>
 										<h3 className="font-medium text-gray-900">{doc.name}</h3>
