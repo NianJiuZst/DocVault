@@ -4,8 +4,50 @@ import { TextStyleKit } from "@tiptap/extension-text-style";
 import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-
-const extensions = [TextStyleKit, StarterKit];
+const extensions = [
+	StarterKit.configure({
+		paragraph: {
+			HTMLAttributes: {
+				style:
+					"line-height: 1.65; margin-bottom: 1.5em; margin-top: 0; font-size: 16px; color: #333333;",
+			},
+		},
+		bulletList: {
+			HTMLAttributes: {
+				style: "margin-left: 1.5em; margin-bottom: 1.5em;",
+			},
+		},
+		orderedList: {
+			HTMLAttributes: {
+				style: "margin-left: 1.5em; margin-bottom: 1.5em;",
+			},
+		},
+		listItem: {
+			HTMLAttributes: {
+				style: "margin-bottom: 0.75em;",
+			},
+		},
+		blockquote: {
+			HTMLAttributes: {
+				style:
+					"border-left: 4px solid #e0e0e0; padding: 12px 20px; margin: 1.5em 0; color: #555555; font-style: italic; background-color: #f8f8f8; border-radius: 0 4px 4px 0;",
+			},
+		},
+		codeBlock: {
+			HTMLAttributes: {
+				style:
+					'background-color: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 1.5em 0; font-family: "Consolas", "Monaco", "Courier New", monospace;',
+			},
+		},
+		code: {
+			HTMLAttributes: {
+				style:
+					'background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; font-family: "Consolas", "Monaco", "Courier New", monospace; font-size: 0.95em;',
+			},
+		},
+	}),
+	TextStyleKit,
+];
 
 // 编辑器工具栏组件
 function MenuBar({ editor }: { editor: Editor }) {
@@ -212,6 +254,7 @@ export default function DocEditor() {
 	const editor = useEditor({
 		extensions,
 		immediatelyRender: false,
+		injectCSS: false,
 		content: `
       <h1>${docId}</h1>
       <p>
@@ -231,13 +274,14 @@ export default function DocEditor() {
 	return (
 		<div className="w-full h-[calc(100vh-2rem)] p-4 bg-white flex flex-col">
 			<MenuBar editor={editor} />
-			<EditorContent
-				editor={editor}
-				className="flex-1 p-4 bg-white overflow-auto border-white"
-				style={{
-					caretColor: "#2563eb",
-				}}
-			/>
+			<div className="flex-1 relative">
+				<div className="h-full overflow-y-auto relative w-full outline-none">
+					<EditorContent
+						editor={editor}
+						className="prose-container h-full pl-14 outline-none  border-none"
+					/>
+				</div>
+			</div>
 		</div>
 	);
 }
