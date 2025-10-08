@@ -1,1 +1,5 @@
 @import "tailwindcss";
+/* 针对 Tiptap 生成的 .ProseMirror 元素 */
+.ProseMirror:focus {
+	outline: none;
+}
