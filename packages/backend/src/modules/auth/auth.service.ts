@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
+import { AxiosResponse } from 'axios';
+import { GithubAccessTokenResponse, GithubUserResponse } from './interface/github.interface';
 import { UserService } from '../user/user.service';  // 后续创建的用户服务
 
 @Injectable()
@@ -9,11 +11,11 @@ export class AuthService {
   constructor(
     private httpService: HttpService,
     private jwtService: JwtService,
-    private userService: UserService,  // 注入用户服务
+    private userService: UserService, 
   ) {}
 
   
-  async getGitHubAccessToken(code: string) : Promise<{ access_token: string, token_type: string, scope: string, error?: string }> {
+  async getGitHubAccessToken(code: string){
     const params = {
       client_id: process.env.GITHUB_CLIENT_ID,
       client_secret: process.env.GITHUB_CLIENT_SECRET,
@@ -21,24 +23,24 @@ export class AuthService {
       redirect_uri: process.env.GITHUB_REDIRECT_URI,
     };
 
-    const response: GithubAccessTokenResponse = await firstValueFrom(
-      this.httpService.post(
+    const response: AxiosResponse<GithubAccessTokenResponse> = await firstValueFrom(
+      this.httpService.post<GithubAccessTokenResponse>(
         'https://github.com/login/oauth/access_token',
         params,
         { headers: { Accept: 'application/json' } },
       ),
     );
 
-    return response.data;  // { access_token, token_type, scope }
+    return response.data;
   }
 
     async getGitHubUserInfo(accessToken: string) {
-    const response: GithubUserResponse = await firstValueFrom(
+    const response: AxiosResponse<GithubUserResponse> = await firstValueFrom(
       this.httpService.get('https://api.github.com/user', {
         headers: { Authorization: `token ${accessToken}` },
       }),
     );
-    return response.data;  // { id, login, name, email, avatar_url 等 }
+    return response.data; 
   }
 
   async handleGitHubCallback(code: string) {
