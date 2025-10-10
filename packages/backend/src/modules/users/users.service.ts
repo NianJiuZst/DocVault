@@ -1,7 +1,7 @@
 import { Injectable} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FindOrCreateUserDto } from './dto/findOrCreate-user.dto';
-import { FindOrCreateUserInterface } from './interface/findOrCreat-user.interface';
+import { FindOrCreateUserInterface } from './interface/findOrCreate-user.interface';
 
 @Injectable()
 export class UsersService {
@@ -20,8 +20,9 @@ export class UsersService {
                 avatar:'',
             }
         });  
+        user = newUser;
     }
-    return user ? user : null ;
+    return user;
   }
     
 }
