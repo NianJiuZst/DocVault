@@ -4,22 +4,23 @@ import { TextStyleKit } from "@tiptap/extension-text-style";
 import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+
 const extensions = [
 	StarterKit.configure({
 		paragraph: {
 			HTMLAttributes: {
 				style:
-					"line-height: 1.65; margin-bottom: 1.5em; margin-top: 0; font-size: 16px; color: #333333;",
+					"line-height: 1.65; margin-bottom: 1.5em; margin-top: 0.5em; font-size: 16px; color: #333333;",
 			},
 		},
 		bulletList: {
 			HTMLAttributes: {
-				style: "margin-left: 1.5em; margin-bottom: 1.5em;",
+				style: "margin-left: 1.5em; margin-bottom: 1.5em; margin-top: 0.5em;",
 			},
 		},
 		orderedList: {
 			HTMLAttributes: {
-				style: "margin-left: 1.5em; margin-bottom: 1.5em;",
+				style: "margin-left: 1.5em; margin-bottom: 1.5em; margin-top: 0.5em;",
 			},
 		},
 		listItem: {
@@ -43,6 +44,12 @@ const extensions = [
 			HTMLAttributes: {
 				style:
 					'background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; font-family: "Consolas", "Monaco", "Courier New", monospace; font-size: 0.95em;',
+			},
+		},
+		heading: {
+			HTMLAttributes: {
+				style:
+					"margin-top: 1.8em; margin-bottom: 0.8em; font-weight: bold; color: #222222;",
 			},
 		},
 	}),

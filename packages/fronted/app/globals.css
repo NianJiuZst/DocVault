@@ -26,3 +26,9 @@
 .ProseMirror h6 {
 	@apply text-sm font-bold mt-8;
 }
+.ProseMirror ol {
+	list-style-type: decimal;
+}
+.ProseMirror ul {
+	list-style-type: disc;
+}
