@@ -4,7 +4,7 @@ import { JwtService } from '@nestjs/jwt';
 import { firstValueFrom } from 'rxjs';
 import { AxiosResponse } from 'axios';
 import { GithubAccessTokenResponse, GithubUserResponse } from './interface/github.interface';
-import { UserService } from '../user/user.service';  // 后续创建的用户服务
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class AuthService {
@@ -22,19 +22,20 @@ export class AuthService {
       code,
       redirect_uri: process.env.GITHUB_REDIRECT_URI,
     };
-
+    //用授权码交换令牌（access_token）
     const response: AxiosResponse<GithubAccessTokenResponse> = await firstValueFrom(
       this.httpService.post<GithubAccessTokenResponse>(
         'https://github.com/login/oauth/access_token',
         params,
+        // 响应类型设置为JSON
         { headers: { Accept: 'application/json' } },
       ),
     );
-
     return response.data;
   }
 
     async getGitHubUserInfo(accessToken: string) {
+    //用令牌获取用户信息
     const response: AxiosResponse<GithubUserResponse> = await firstValueFrom(
       this.httpService.get('https://api.github.com/user', {
         headers: { Authorization: `token ${accessToken}` },
