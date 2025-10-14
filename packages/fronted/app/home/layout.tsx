@@ -121,7 +121,23 @@ export default function HomeLayout({
           }}
         >
           <SearchBar />
-          <Link href="/home/login">login</Link>
+          {/* 新增头像框 + login链接 */}
+          <div className="flex items-center gap-4">
+            {/* 头像框 */}
+            <div
+              className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300"
+              style={{ position: "relative" }}
+            >
+              {/* 这里使用默认头像，实际项目中可替换为用户头像 */}
+              <Image
+                src="/images/default-avatar.png" // 建议在public/images下放置默认头像图片
+                alt="User Avatar"
+                fill
+                style={{ objectFit: "cover" }}
+              />
+            </div>
+            <Link href="/home/login">login</Link>
+          </div>
         </div>
         <main className="flex-1 flex overflow-y-auto">
           {children}
