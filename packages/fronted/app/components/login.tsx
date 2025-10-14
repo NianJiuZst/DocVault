@@ -1,7 +1,8 @@
+// app/login/page.tsx
 "use client";
 
-import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
+import { useState } from "react";
 
 const ERROR_MESSAGES: Record<string, string> = {
   Configuration: "认证服务配置错误，请联系管理员",
@@ -23,21 +24,34 @@ export default function LoginPage() {
   const callbackUrl = searchParams.get("callbackUrl") || "/home/cloud-docs";
   const error = searchParams.get("error");
 
+  // 构造 GitHub 授权 URL
   const handleSignIn = () => {
-    signIn("github", { callbackUrl });
+    const clientId =
+      process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liLnXI5JngJR7Ykx";
+    const redirectUri =
+      process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
+      "http://localhost:3000/api/auth/github/callback";
+    const state = Math.random().toString(36).substring(2); // 简单的 state 生成
+    // 存储 state 到 localStorage 或 cookie（用于回调时验证）
+    localStorage.setItem("oauth_state", state);
+
+    const githubAuthUrl =
+      `https://github.com/login/oauth/authorize?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=user&` +
+      `state=${state}`;
+
+    window.location.href = githubAuthUrl;
   };
 
   return (
     <div className="font-sans">
-      {/* 关键：用 flex 让正方形居中，去掉 min-h-screen，避免高度拉伸 */}
-      <div className="flex justify-center items-center min-h-screen  p-4">
-        {/* 正方形外层容器：宽高完全相等，强制正方形 */}
+      <div className="flex justify-center items-center min-h-screen p-4">
         <div className="relative w-[360px] h-[360px] sm:w-[400px] sm:h-[400px]">
-          {/* 装饰性背景卡片 - 跟外层容器一致，也是正方形 */}
           <div className="card bg-blue-400 shadow-lg w-full h-full rounded-3xl absolute transform -rotate-6"></div>
           <div className="card bg-red-400 shadow-lg w-full h-full rounded-3xl absolute transform rotate-6"></div>
 
-          {/* 主内容区：白色正方形，填充外层容器 */}
           <div className="relative w-full h-full rounded-3xl px-6 py-6 bg-white shadow-md flex flex-col justify-center">
             <h3 className="text-2xl font-bold text-center text-gray-800 mb-3">
               欢迎使用 DocVault
@@ -46,7 +60,6 @@ export default function LoginPage() {
               请使用 GitHub 账号登录
             </p>
 
-            {/* 错误提示区域 */}
             {error && (
               <div
                 className="mb-5 p-2 border-l-4 border-red-500 bg-red-50 text-red-700 text-sm rounded"
@@ -59,7 +72,6 @@ export default function LoginPage() {
               </div>
             )}
 
-            {/* 登录表单 */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -87,7 +99,6 @@ export default function LoginPage() {
               </button>
             </form>
 
-            {/* 底部提示 */}
             <p className="text-xs text-gray-500 text-center mt-6">
               登录即表示你同意我们的服务条款和隐私政策
             </p>
