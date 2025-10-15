@@ -32,7 +32,7 @@ export class AuthController {
       });
 
       return res.redirect(
-        `${process.env.FRONTEND_URL}/login-success?state=${state}`,
+        `${process.env.FRONTEND_URL}/home/cloud-docs?state=${state}`,
       );
     } catch (err) {
       console.error('GitHub 登录失败:', err);
