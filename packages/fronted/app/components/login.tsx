@@ -1,10 +1,15 @@
-// app/login/page.tsx
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { FormEvent } from "react";
 
-const ERROR_MESSAGES: Record<string, string> = {
+// 定义Props类型
+interface LoginFormProps {
+  callbackUrl: string;
+  error?: string;
+  errorMessage: string;
+  onSignIn: () => void; // 登录函数，由父组件传递
+}
+export const ERROR_MESSAGES: Record<string, string> = {
   Configuration: "认证服务配置错误，请联系管理员",
   AccessDenied: "您取消了 GitHub 登录授权",
   Default: "登录失败，请重试",
@@ -18,31 +23,21 @@ const ERROR_MESSAGES: Record<string, string> = {
   CredentialsSignin: "凭据无效，请检查用户名或密码",
   SessionRequired: "需要登录会话",
 };
+export default function LoginForm({
+  callbackUrl,
+  error,
+  errorMessage,
+  onSignIn,
+}: LoginFormProps) {
+  // 防御性检查：确保onSignIn是函数
+  if (typeof onSignIn !== "function") {
+    console.error("onSignIn必须是函数");
+    return null;
+  }
 
-export default function LoginPage() {
-  const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") || "/home/cloud-docs";
-  const error = searchParams.get("error");
-
-  // 构造 GitHub 授权 URL
-  const handleSignIn = () => {
-    const clientId =
-      process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liLnXI5JngJR7Ykx";
-    const redirectUri =
-      process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
-      "http://localhost:3000/api/auth/github/callback";
-    const state = Math.random().toString(36).substring(2); // 简单的 state 生成
-    // 存储 state 到 localStorage 或 cookie（用于回调时验证）
-    localStorage.setItem("oauth_state", state);
-
-    const githubAuthUrl =
-      `https://github.com/login/oauth/authorize?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `scope=user&` +
-      `state=${state}`;
-
-    window.location.href = githubAuthUrl;
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    onSignIn(); // 调用父组件传递的登录函数
   };
 
   return (
@@ -66,19 +61,11 @@ export default function LoginPage() {
                 role="alert"
               >
                 <strong className="font-medium">登录失败</strong>
-                <p className="mt-1">
-                  {ERROR_MESSAGES[error] || ERROR_MESSAGES.Default}
-                </p>
+                <p className="mt-1">{errorMessage}</p>
               </div>
             )}
 
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSignIn();
-              }}
-              className="space-y-5"
-            >
+            <form onSubmit={handleSubmit} className="space-y-5">
               <button
                 type="submit"
                 className="w-full flex items-center justify-center gap-3 bg-gray-900 text-white py-3 rounded-xl shadow-lg hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-700 transition-all duration-200 transform hover:scale-105"
