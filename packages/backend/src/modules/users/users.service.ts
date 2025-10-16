@@ -9,15 +9,14 @@ export class UsersService {
 
   async findOrCreate(dto: FindOrCreateUserDto): Promise<FindOrCreateUserInterface|null> {
     let user = await this.prisma.user.findUnique({
-      where: { id: dto.id },
+      where: { githubUserId: dto.githubUserId },
     });
     if (!user) {
         const newUser = await this.prisma.user.create({
             data: {
-                id:dto.id,
                 githubUserId:dto.githubUserId,
-                name:dto.name ? dto.name : '',
-                avatar:'',
+                name:dto?.name || '',
+                avatar:dto?.avatar || '',
             }
         });  
         user = newUser;
