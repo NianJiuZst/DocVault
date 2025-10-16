@@ -2,6 +2,7 @@ import { Injectable} from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { FindOrCreateUserDto } from './dto/findOrCreate-user.dto';
 import { FindOrCreateUserInterface } from './interface/findOrCreate-user.interface';
+import { MeInterface } from './interface/me.interface';
 
 @Injectable()
 export class UsersService {
@@ -22,6 +23,20 @@ export class UsersService {
         user = newUser;
     }
     return user;
+  }
+  async find(userId: number): Promise<MeInterface|null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) {
+      return null;
+    }
+    return {
+      id: user.id,
+      githubUserId: user.githubUserId,
+      name: user.name,
+      avatar: user.avatar,
+    }
   }
     
 }

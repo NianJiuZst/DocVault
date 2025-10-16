@@ -55,9 +55,10 @@ export class AuthService {
     const githubUser = await this.getGitHubUserInfo(accessToken);
 
     const localUser = await this.userService.findOrCreate({
-      name: githubUser.name ? githubUser.name : '',
+      name: githubUser?.name || '',
       githubUserId: githubUser.id.toString(),
       id: githubUser.id,
+      avatar: githubUser?.avatar_url || '',
     });
 
     const jwtToken = this.jwtService.sign({
