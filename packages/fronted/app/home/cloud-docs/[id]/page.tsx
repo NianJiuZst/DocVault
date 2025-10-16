@@ -3,8 +3,9 @@ import { useParams } from "next/navigation";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import StarterKit from "@tiptap/starter-kit";
-
+import { SuggestionMenu } from "@/extension/suggestion-menu/SuggestionMenu";
 const extensions = [
 	StarterKit.configure({
 		paragraph: {
@@ -54,6 +55,9 @@ const extensions = [
 		},
 	}),
 	TextStyleKit,
+	SuggestionMenu,
+	TaskItem,
+	TaskList,
 ];
 
 // 编辑器工具栏组件
@@ -277,7 +281,6 @@ export default function DocEditor() {
 	if (!editor) {
 		return <div>加载编辑器中...</div>;
 	}
-
 	return (
 		<div className="w-full h-[calc(100vh-2rem)] p-4 bg-white flex flex-col">
 			<MenuBar editor={editor} />
