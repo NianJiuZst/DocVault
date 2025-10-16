@@ -77,7 +77,6 @@ const SplashScreen: React.FC = () => {
 				</p>
 
 				<div className={styles["cards-container"]}>
-					{/* 卡片 1 */}
 					<div
 						className={styles.card}
 						data-rotation-factor="2"
@@ -95,8 +94,6 @@ const SplashScreen: React.FC = () => {
 							</div>
 						</div>
 					</div>
-
-					{/* 卡片 2 */}
 					<div
 						className={styles.card}
 						data-rotation-factor="2"
@@ -112,8 +109,6 @@ const SplashScreen: React.FC = () => {
 							</div>
 						</div>
 					</div>
-
-					{/* 卡片 3 */}
 					<div
 						className={styles.card}
 						data-rotation-factor="2"
