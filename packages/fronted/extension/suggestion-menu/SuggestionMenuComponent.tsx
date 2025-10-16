@@ -41,16 +41,14 @@ const SuggestionMenuComponent: React.FC<SuggestionMenuComponentProps> = ({
 				}}
 				onClick={() => handleItemClick(command)}
 			>
-				{/* 渲染图标 */}
 				<div
 					style={{
-						marginRight: "8px", // 图标与文字的间距
-						fontSize: "16px", // 图标大小（可根据需要调整）
+						marginRight: "8px",
+						fontSize: "16px",
 					}}
 				>
 					{command.icon}
 				</div>
-				{/* 渲染名称 */}
 				<div
 					style={{
 						fontSize: "14px",
@@ -64,19 +62,14 @@ const SuggestionMenuComponent: React.FC<SuggestionMenuComponentProps> = ({
 		);
 	};
 
-	/** 渲染单个分组 - 包含标题和命令列表 */
 	const renderGroup = (group: Group) => {
-		// 过滤分组内需要隐藏的命令
 		const validCommands = group.commands.filter(
 			(cmd) => cmd.shouldBeHidden?.(editor) !== true,
 		);
-
-		// 空分组不渲染
 		if (validCommands.length === 0) return null;
 
 		return (
 			<div key={group.name} className="suggestion-group">
-				{/* 分组标题 */}
 				<div
 					style={{
 						fontSize: "12px",
@@ -88,13 +81,10 @@ const SuggestionMenuComponent: React.FC<SuggestionMenuComponentProps> = ({
 				>
 					{group.title}
 				</div>
-				{/* 渲染分组内所有有效命令 */}
 				{validCommands.map(renderCommand)}
 			</div>
 		);
 	};
-
-	// 无有效分组或无定位时，不渲染菜单
 	const hasValidGroups = items.some((group) =>
 		group.commands.some((cmd) => cmd.shouldBeHidden?.(editor) !== true),
 	);
