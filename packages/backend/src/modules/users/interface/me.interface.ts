@@ -1,6 +1,6 @@
 export interface MeInterface {
   id: number;
-  githubUserId: number;
-  username: string;
+  githubUserId: string;
+  name: string;
   avatar: string;
 }
