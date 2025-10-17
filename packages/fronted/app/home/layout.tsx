@@ -1,11 +1,12 @@
 "use client";
-import type { ReactNode } from "react";
+import { use, type ReactNode } from "react";
 import SearchBar from "../components/SearchBar";
 import Image from "next/image";
 import Link from "next/link";
 import { NavigationList } from "../components/navigation";
 import { usePathname } from "next/navigation";
-
+import AuthProvider from "../components/AuthProvider";
+import { useAuth } from "../components/AuthProvider";
 export default function HomeLayout({
   children,
   modal,
@@ -14,6 +15,7 @@ export default function HomeLayout({
   modal: ReactNode;
 }) {
   const pathname = usePathname();
+  const { user, loading, logout } = useAuth();
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 侧边栏 */}
@@ -130,18 +132,28 @@ export default function HomeLayout({
             >
               {/* 这里使用默认头像，实际项目中可替换为用户头像 */}
               <Image
-                src="/images/default-avatar.png" // 建议在public/images下放置默认头像图片
+                src={user?.avatar || "/images/default-avatar.png"} // 建议在public/images下放置默认头像图片
                 alt="User Avatar"
                 fill
                 style={{ objectFit: "cover" }}
               />
+              {!user ? (
+                <Link href="/home/login">login</Link>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <span>{user.name}</span>
+                  <button onClick={logout}>logout</button>
+                </div>
+              )}
             </div>
             <Link href="/home/login">login</Link>
           </div>
         </div>
         <main className="flex-1 flex overflow-y-auto">
-          {children}
-          {modal}
+          <AuthProvider>
+            {children}
+            {modal}
+          </AuthProvider>
         </main>
       </div>
     </div>
