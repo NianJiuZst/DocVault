@@ -3,10 +3,11 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { FindOrCreateUserDto } from './dto/findOrCreate-user.dto';
 import { FindOrCreateUserInterface } from './interface/findOrCreate-user.interface';
 import { MeInterface } from './interface/me.interface';
+import { JwtService } from '@nestjs/jwt';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService,private jwtService: JwtService) {}
 
   async findOrCreate(dto: FindOrCreateUserDto): Promise<FindOrCreateUserInterface|null> {
     let user = await this.prisma.user.findUnique({
@@ -29,7 +30,12 @@ export class UsersService {
       where: { id: userId },
     });
     if (!user) {
-      return null;
+      return {
+        id: 0,
+        githubUserId: '',
+        name: '',
+        avatar: '',
+      };
     }
     return {
       id: user.id,

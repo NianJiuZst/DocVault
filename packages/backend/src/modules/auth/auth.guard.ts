@@ -13,6 +13,7 @@ export class AuthGuard implements CanActivate {
     
     // 1. 从Cookie中读取JWT
     const token = request.cookies['docvault_jwt'];
+    console.log('tokentest!!!!',token);
     if (!token) {
       throw new UnauthorizedException('未登录，请先登录');
     }
@@ -24,6 +25,7 @@ export class AuthGuard implements CanActivate {
       });
       // 3. 将解析后的用户信息附加到request对象（供控制器使用）
       // 假设JWT payload中包含用户id、githubUserId等信息
+      console.log('payloadtest!!!!',payload);
       request['_user'] = payload; 
     } catch (error) {
       throw new UnauthorizedException('登录已过期，请重新登录');
