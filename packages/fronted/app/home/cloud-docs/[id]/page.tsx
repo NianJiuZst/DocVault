@@ -6,6 +6,7 @@ import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import StarterKit from "@tiptap/starter-kit";
 import { SuggestionMenu } from "@/extension/suggestion-menu/SuggestionMenu";
+import { YoutubeExtension } from "@/extension/YouTube/YouTube";
 
 const Extensions = [
 	StarterKit.configure({
@@ -59,6 +60,7 @@ const Extensions = [
 	SuggestionMenu,
 	TaskItem,
 	TaskList,
+	YoutubeExtension,
 ];
 
 function MenuBar({ editor }: { editor: Editor }) {
