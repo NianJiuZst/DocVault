@@ -8,7 +8,7 @@ import type {
 } from "@tiptap/suggestion";
 import SuggestionMenuComponent from "./SuggestionMenuComponent";
 import type { Group, Command } from "./type";
-import GROUPS from "./group";
+import ExtensionGroups from "../group";
 export const SuggestionMenu = Extension.create({
 	name: "SuggestionMenu",
 	priority: 200,
@@ -27,7 +27,7 @@ export const SuggestionMenu = Extension.create({
 					return $from.parent.type.name === "paragraph";
 				},
 				items: ({ query }: { query: string }): Group[] => {
-					return GROUPS.map(
+					return ExtensionGroups.map(
 						(group): Group => ({
 							...group,
 							commands: group.commands

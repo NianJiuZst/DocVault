@@ -1,5 +1,4 @@
-import type { Group } from "./type";
-
+import type { Group } from "./suggestion-menu/type";
 import {
 	RiH1,
 	RiH2,
@@ -10,8 +9,8 @@ import {
 } from "react-icons/ri";
 import { GrUnorderedList, GrOrderedList } from "react-icons/gr";
 import { FcTodoList } from "react-icons/fc";
-
-const GROUPS: Group[] = [
+import { IoLogoYoutube } from "react-icons/io5";
+const ExtensionGroups: Group[] = [
 	{
 		name: "Basic effect",
 		title: "基础",
@@ -82,6 +81,19 @@ const GROUPS: Group[] = [
 			},
 		],
 	},
+	{
+		name: "Advanced effect",
+		title: "高级",
+		commands: [
+			{
+				name: "插入 YouTube 视频",
+				icon: <IoLogoYoutube style={{ color: "red" }} />,
+				action: () => {
+					window.dispatchEvent(new Event("openYouTubeModal"));
+				},
+			},
+		],
+	},
 ];
 
-export default GROUPS;
+export default ExtensionGroups;
