@@ -4,7 +4,6 @@ import { IoCloudUploadOutline } from "react-icons/io5";
 import { CgTemplate } from "react-icons/cg";
 import { useState } from "react";
 import { FaRegFileAlt } from "react-icons/fa";
-// 1. 导入 Next.js 客户端路由钩子
 import { useRouter } from "next/navigation";
 
 interface Document {
@@ -92,7 +91,6 @@ const documentData: { [key: string]: Document[] } = {
 
 export default function CloudDocsPage() {
 	const [activeTab, setActiveTab] = useState("recent");
-	// 2. 初始化路由实例
 	const router = useRouter();
 	const handleNewDoc = () => {
 		router.push("/home/cloud-docs/1");
@@ -101,10 +99,9 @@ export default function CloudDocsPage() {
 	return (
 		<div className="min-h-screen bg-white flex justify-start flex-col w-full ">
 			<div className="container pl-[4%] py-6 max-w-7xl">
-				{/* 第一行：操作按钮 - 给“新建”按钮添加 onClick 事件 */}
 				<div className="flex flex-wrap gap-4 mb-8">
 					<button
-						onClick={handleNewDoc} // 4. 绑定跳转事件
+						onClick={handleNewDoc}
 						className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
 					>
 						<VscNewFile className="h-5 w-5" />
@@ -120,7 +117,6 @@ export default function CloudDocsPage() {
 					</button>
 				</div>
 
-				{/* 第二行：选项卡（保持不变） */}
 				<div className="border-b border-gray-200 mb-6">
 					<div className="flex space-x-8">
 						<button
@@ -155,8 +151,6 @@ export default function CloudDocsPage() {
 						</button>
 					</div>
 				</div>
-
-				{/* 文档列表（保持不变） */}
 				<div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
 					<div className="divide-y divide-gray-100">
 						{documentData[activeTab].map((doc) => (
