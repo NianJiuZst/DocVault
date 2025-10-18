@@ -23,6 +23,7 @@
 		"@tiptap/suggestion": "^3.7.2",
 		"es-toolkit": "^1.39.10",
 		"next": "15.5.4",
+		"next-auth": "^4.24.11",
 		"react": "19.2.0",
 		"react-dom": "19.2.0",
 		"react-icons": "^5.5.0"
