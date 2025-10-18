@@ -10,19 +10,23 @@ export class UsersService {
   constructor(private prisma: PrismaService,private jwtService: JwtService) {}
 
   async findOrCreate(dto: FindOrCreateUserDto): Promise<FindOrCreateUserInterface|null> {
-    let user = await this.prisma.user.findUnique({
-      where: { githubUserId: dto.githubUserId },
+    const user = await this.prisma.user.upsert({
+      // 1. 查找条件：根据 githubUserId 匹配
+      where: {
+        githubUserId: dto.githubUserId, 
+      },
+      // 2. 若存在：更新字段
+      update: {
+        name: dto?.name || '', 
+        avatar: dto?.avatar || '', 
+      },
+      // 3. 若不存在：创建新用户（和原来的 create 逻辑一致）
+      create: {
+        githubUserId: dto.githubUserId,
+        name: dto?.name || '',
+        avatar: dto?.avatar || '',
+      },
     });
-    if (!user) {
-        const newUser = await this.prisma.user.create({
-            data: {
-                githubUserId:dto.githubUserId,
-                name:dto?.name || '',
-                avatar:dto?.avatar || '',
-            }
-        });  
-        user = newUser;
-    }
     return user;
   }
   async find(userId: number): Promise<MeInterface|null> {

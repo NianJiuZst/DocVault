@@ -54,6 +54,8 @@ export class AuthService {
 
     const githubUser = await this.getGitHubUserInfo(accessToken);
 
+    console.log('githubUsertest!!!',githubUser);
+
     const localUser = await this.userService.findOrCreate({
       name: githubUser?.name || '',
       githubUserId: githubUser.id.toString(),
