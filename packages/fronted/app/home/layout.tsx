@@ -1,4 +1,5 @@
 "use client";
+"use client";
 import { use, type ReactNode } from "react";
 import SearchBar from "../components/SearchBar";
 import Image from "next/image";
@@ -155,6 +156,7 @@ export default function HomeLayout({
             {modal}
           </AuthProvider>
         </main>
+        {/*  */}
       </div>
     </div>
   );
