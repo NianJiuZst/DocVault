@@ -61,7 +61,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
       setError(null);
       try {
         // 调用后端接口获取当前用户信息（判断是否登录）
-        const res = await fetch("/api/user/me");
+        const res = await fetch("http://localhost:3001/users/me", {
+          method: "POST",
+          credentials: "include", // 必须带，否则跨域场景下 Cookie 传不过去
+        });
 
         if (res.ok) {
           // 接口成功：说明已登录，保存用户信息
