@@ -1,42 +1,53 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-// 关键：从 app/components/login.tsx 导入组件（相对路径）
 import LoginForm, { ERROR_MESSAGES } from "../components/login";
+
+// 新增：客户端设置 Cookie 的工具函数
+const setClientCookie = (
+  name: string,
+  value: string,
+  maxAgeSeconds: number
+) => {
+  document.cookie = `${name}=${value}; max-age=${maxAgeSeconds}; path=/; sameSite=lax; ${
+    process.env.NODE_ENV === "production" ? "secure;" : ""
+  }`;
+};
 
 export default function LoginPage() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/home/cloud-docs";
-  const error = searchParams.get("error") || undefined; // 转换null为undefined
+  const error = searchParams.get("error") || undefined;
   const errorMessage = ERROR_MESSAGES[error || ""] || ERROR_MESSAGES.Default;
 
-  // 定义登录逻辑函数
   const handleSignIn = () => {
     const clientId =
       process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liLnXI5JngJR7Ykx";
     const redirectUri =
       process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
-      "http://localhost:3001/api/auth/github/callback";
+      "http://localhost:3001/auth/github/callback";
     const state = Math.random().toString(36).substring(2);
-    localStorage.setItem("oauth_state", state);
 
+    // 关键修改：用 Cookie 存 state，替换 localStorage
+    setClientCookie("github_oauth_state", state, 600); // 600秒=10分钟有效期，与回调路由一致
+
+    // 拼接 GitHub 授权 URL（逻辑不变）临时修改
     const githubAuthUrl =
       `https://github.com/login/oauth/authorize?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `client_id=Ov23liLnXI5JngJR7Ykx&` +
+      `redirect_uri=http://localhost:3001/auth/github/callback&` +
       `scope=user&` +
       `state=${state}`;
 
     window.location.href = githubAuthUrl;
   };
 
-  // 传递props给组件
   return (
     <LoginForm
       callbackUrl={callbackUrl}
       error={error}
       errorMessage={errorMessage}
-      onSignIn={handleSignIn} // 正确传递函数
+      onSignIn={handleSignIn}
     />
   );
 }

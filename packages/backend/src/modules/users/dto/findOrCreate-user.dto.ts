@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber} from 'class-validator';
+import { IsOptional, IsNumber } from "class-validator";
 
 export class FindOrCreateUserDto {
   @IsNumber()
@@ -6,6 +6,8 @@ export class FindOrCreateUserDto {
   githubUserId: string;
   @IsOptional()
   name?: string;
-  @IsOptional()
+  githubUserId: string;
+  email?: string | null;
   avatar?: string;
 }
+

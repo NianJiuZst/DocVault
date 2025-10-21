@@ -33,6 +33,7 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
+
     if (!user) {
       return {
         id: 0,
@@ -48,5 +49,4 @@ export class UsersService {
       avatar: user.avatar,
     }
   }
-    
 }
