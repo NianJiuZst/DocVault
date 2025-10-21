@@ -21,7 +21,8 @@
 			},
 			"a11y": {
 				"useButtonType": "off",
-				"noStaticElementInteractions": "off"
+				"noStaticElementInteractions": "off",
+				"useKeyWithClickEvents": "off"
 			}
 		}
 	},

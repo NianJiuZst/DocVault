@@ -1,10 +1,9 @@
-"use client";
-"use client";
+"use client
 import { use, type ReactNode } from "react";
-import SearchBar from "../components/SearchBar";
+import SearchBar from "../components/Search
 import Image from "next/image";
 import Link from "next/link";
-import { NavigationList } from "../components/navigation";
+import { NavigationList } from "../../components/Navigation";
 import { usePathname } from "next/navigation";
 import AuthProvider from "../components/AuthProvider";
 import { useAuth } from "../components/AuthProvider";

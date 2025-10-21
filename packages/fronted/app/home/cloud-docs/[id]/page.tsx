@@ -3,9 +3,12 @@ import { useParams } from "next/navigation";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import { TaskItem, TaskList } from "@tiptap/extension-list";
 import StarterKit from "@tiptap/starter-kit";
+import { SuggestionMenu } from "@/extension/suggestion-menu/SuggestionMenu";
+import { YoutubeExtension } from "@/extension/YouTube/YouTube";
 
-const extensions = [
+const Extensions = [
 	StarterKit.configure({
 		paragraph: {
 			HTMLAttributes: {
@@ -54,9 +57,12 @@ const extensions = [
 		},
 	}),
 	TextStyleKit,
+	SuggestionMenu,
+	TaskItem,
+	TaskList,
+	YoutubeExtension,
 ];
 
-// 编辑器工具栏组件
 function MenuBar({ editor }: { editor: Editor }) {
 	const editorState = useEditorState({
 		editor,
@@ -84,6 +90,34 @@ function MenuBar({ editor }: { editor: Editor }) {
 			canUndo: ctx.editor.can().chain().undo().run() ?? false,
 			canRedo: ctx.editor.can().chain().redo().run() ?? false,
 		}),
+		// 自定义相等性检查：仅当订阅的状态真正变化时才触发重渲染
+		equalityFn: (prev, next) => {
+			if (!prev || !next) return false;
+			return (
+				prev.isBold === next.isBold &&
+				prev.canBold === next.canBold &&
+				prev.isItalic === next.isItalic &&
+				prev.canItalic === next.canItalic &&
+				prev.isStrike === next.isStrike &&
+				prev.canStrike === next.canStrike &&
+				prev.isCode === next.isCode &&
+				prev.canCode === next.canCode &&
+				prev.canClearMarks === next.canClearMarks &&
+				prev.isParagraph === next.isParagraph &&
+				prev.isHeading1 === next.isHeading1 &&
+				prev.isHeading2 === next.isHeading2 &&
+				prev.isHeading3 === next.isHeading3 &&
+				prev.isHeading4 === next.isHeading4 &&
+				prev.isHeading5 === next.isHeading5 &&
+				prev.isHeading6 === next.isHeading6 &&
+				prev.isBulletList === next.isBulletList &&
+				prev.isOrderedList === next.isOrderedList &&
+				prev.isCodeBlock === next.isCodeBlock &&
+				prev.isBlockquote === next.isBlockquote &&
+				prev.canUndo === next.canUndo &&
+				prev.canRedo === next.canRedo
+			);
+		},
 	});
 
 	if (!editor) return null;
@@ -238,7 +272,6 @@ function MenuBar({ editor }: { editor: Editor }) {
 	);
 }
 
-// 按钮样式辅助函数
 const getButtonStyle = (isActive: boolean, disabled = false) => ({
 	padding: "0.3rem 0.6rem",
 	border: "1px solid #ddd",
@@ -252,14 +285,12 @@ const getButtonStyle = (isActive: boolean, disabled = false) => ({
 	},
 });
 
-// 主编辑器组件（结合动态ID）
 export default function DocEditor() {
 	const params = useParams();
-	const docId = params.id as string; // 获取动态路由中的id
+	const docId = params.id as string;
 
-	// 初始化编辑器，将id作为标题
 	const editor = useEditor({
-		extensions,
+		extensions: Extensions,
 		immediatelyRender: false,
 		injectCSS: false,
 		content: `
@@ -272,6 +303,7 @@ export default function DocEditor() {
       </p>
     `,
 		autofocus: true,
+		shouldRerenderOnTransaction: false,
 	});
 
 	if (!editor) {
@@ -285,7 +317,7 @@ export default function DocEditor() {
 				<div className="h-full overflow-y-auto relative w-full outline-none">
 					<EditorContent
 						editor={editor}
-						className="prose-container h-full pl-14 outline-none  border-none"
+						className="prose-container h-full pl-14 outline-none border-none"
 					/>
 				</div>
 			</div>
