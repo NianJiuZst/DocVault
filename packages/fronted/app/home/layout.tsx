@@ -1,12 +1,12 @@
-"use client
+"use client";
 import { use, type ReactNode } from "react";
-import SearchBar from "../components/Search
+import SearchBar from "../../components/SearchBar";
 import Image from "next/image";
 import Link from "next/link";
 import { NavigationList } from "../../components/Navigation";
 import { usePathname } from "next/navigation";
-import AuthProvider from "../components/AuthProvider";
 import { useAuth } from "../components/AuthProvider";
+import avatarsrc from "@/src/image/deavatar.jpg";
 export default function HomeLayout({
   children,
   modal,
@@ -16,6 +16,7 @@ export default function HomeLayout({
 }) {
   const pathname = usePathname();
   const { user, loading, logout } = useAuth();
+  console.log(user);
   return (
     <div className="flex h-screen bg-gray-50">
       {/* 侧边栏 */}
@@ -115,7 +116,7 @@ export default function HomeLayout({
       {/* 主内容区域 */}
       <div className="flex-1 flex flex-col overflow-hidden ">
         <div
-          className="flex items-center px-4 transition-all duration-300  justify-between"
+          className="flex items-center px-4 transition-all duration-300 justify-between"
           style={{
             height: "10%",
             backgroundColor: "rgb(251, 252, 246)",
@@ -123,39 +124,41 @@ export default function HomeLayout({
           }}
         >
           <SearchBar />
-          {/* 新增头像框 + login链接 */}
+          {/* 新增头像框 + 登录或用户信息 */}
           <div className="flex items-center gap-4">
             {/* 头像框 */}
-            <div
-              className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300"
-              style={{ position: "relative" }}
-            >
-              {/* 这里使用默认头像，实际项目中可替换为用户头像 */}
+            <div className="w-10 h-10 rounded-full bg-gray-200 overflow-hidden border border-gray-300 relative">
               <Image
-                src={user?.avatar || "/images/default-avatar.png"} // 建议在public/images下放置默认头像图片
+                src={user?.avatar || avatarsrc}
                 alt="User Avatar"
                 fill
                 style={{ objectFit: "cover" }}
               />
-              {!user ? (
-                <Link href="/home/login">login</Link>
-              ) : (
-                <div className="flex items-center gap-2">
+            </div>
+            {/* 用户信息和登出/登录按钮 */}
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
                   <span>{user.name}</span>
-                  <button onClick={logout}>logout</button>
-                </div>
+                  <button
+                    onClick={logout}
+                    className="px-4 py-1.5  text-sm font-medium text-white bg-gray-400 rounded-2xl shadow-md hover:bg-gray-700 transition-all duration-200 hover:shadow-lg transform hover:-translate-y-0.5"
+                  >
+                    logout
+                  </button>
+                </>
+              ) : (
+                <Link href="/home/login" className="text-blue-600 underline">
+                  login
+                </Link>
               )}
             </div>
-            <Link href="/home/login">login</Link>
           </div>
         </div>
         <main className="flex-1 flex overflow-y-auto">
-          <AuthProvider>
-            {children}
-            {modal}
-          </AuthProvider>
+          {children}
+          {modal}
         </main>
-        {/*  */}
       </div>
     </div>
   );
