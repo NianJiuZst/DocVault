@@ -1,4 +1,3 @@
-// components/AuthProvider.tsx
 "use client";
 
 import {
@@ -10,34 +9,34 @@ import {
 } from "react";
 import { useRouter, usePathname } from "next/navigation";
 
-// 1. 定义用户类型（与模板一致，确保后端返回字段匹配）
+// 1. 定义用户类型（与后端返回字段匹配）
 interface User {
   id: number;
   name: string;
   avatar?: string;
   email?: string | null;
   githubUserId: string;
-  createdAt?: string; // 后端 Date 类型序列化后的字符串
+  createdAt?: string;
   updatedAt?: string;
 }
 
-// 2. 定义认证上下文类型（包含所有需要全局共享的状态和方法）
+// 2. 定义认证上下文类型
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   error: string | null;
-  logout: () => Promise<void>; // 异步登出方法
+  logout: () => Promise<void>;
 }
 
-// 3. 创建 Context 并设置默认值（类型严格对齐，避免初始化报错）
+// 3. 创建 Context 并设置默认值
 const AuthContext = createContext<AuthContextType>({
   user: null,
   loading: true,
   error: null,
-  logout: async () => {}, // 默认空实现，实际会被 Provider 覆盖
+  logout: async () => {},
 });
 
-// 4. 自定义 Hook：简化子组件获取上下文的方式，增加使用校验
+// 4. 自定义 Hook
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -46,84 +45,79 @@ export const useAuth = () => {
   return context;
 };
 
-// 5. 核心认证提供者组件（重点优化跳转逻辑）
+// 5. 核心认证提供者组件
 export default function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const pathname = usePathname(); // 获取当前页面路径，用于避免无限跳转
+  const pathname = usePathname();
+  // 定义常量存储登录页路径（避免重复书写，确保依赖稳定）
+  const LOGIN_PATH = "/home/login";
 
-  // 6. 登录状态检查与自动跳转（核心逻辑优化）
+  // 6. 登录状态检查与自动跳转（修复依赖数组问题）
   useEffect(() => {
     const checkLogin = async () => {
-      // 初始化时重置错误状态，避免残留旧错误
       setError(null);
       try {
-        // 调用后端接口获取当前用户信息（判断是否登录）
         const res = await fetch("http://localhost:3001/users/me", {
           method: "POST",
-          credentials: "include", // 必须带，否则跨域场景下 Cookie 传不过去
+          credentials: "include", // 确保跨域 Cookie 传递
         });
 
         if (res.ok) {
-          // 接口成功：说明已登录，保存用户信息
-          const data = await res.json();
-          setUser(data.user);
-        } else {
-          // 接口失败：无论状态码是 401（未授权）还是其他，均视为“未登录/需重新登录”
-          setUser(null);
-          // 关键跳转判断：当前不在登录页时，才跳转到登录页（避免无限循环）
-          if (pathname !== "/home/login") {
-            // 使用 Next.js 路由的 push 方法跳转，保留浏览器历史记录
-            router.push("/home/login");
+          const userData = await res.json();
+          setUser(userData);
+          // 已登录状态下若在登录页，自动跳转到首页
+          if (pathname === LOGIN_PATH) {
+            router.push("/");
           }
-          // 针对非 401 错误（如 500 服务器错误），补充错误提示
+        } else {
+          setUser(null);
+          // 未登录且不在登录页时跳转
+          if (pathname !== LOGIN_PATH) {
+            router.push(LOGIN_PATH);
+          }
           if (res.status !== 401) {
             setError("用户状态异常，请重新登录");
           }
         }
       } catch (err) {
-        // 捕获网络错误（如断网、接口不存在）
         console.error("登录状态检查失败:", err);
-        setUser(null); // 网络错误时，默认视为未登录
+        setUser(null);
         setError("网络连接异常，请检查网络后重试");
-        // 网络错误时仍触发跳转（兜底处理，确保未登录状态下进入登录页）
-        if (pathname !== "/home/login") {
-          router.push("/home/login");
+        if (pathname !== LOGIN_PATH) {
+          router.push(LOGIN_PATH);
         }
       } finally {
-        // 无论成功/失败，最终都结束加载状态（避免一直显示“加载中”）
         setLoading(false);
       }
     };
 
-    // 立即执行登录检查
     checkLogin();
-  }, [router, pathname]); // 依赖路由实例和当前路径，确保路径变化时重新校验
+  }, [router, pathname, LOGIN_PATH]); // 依赖数组元素固定，顺序稳定
 
-  // 7. 登出方法实现（与模板逻辑一致，确保登出后跳转登录页）
+  // 7. 登出方法
   const logout = async () => {
     try {
       setError(null);
-      // 调用后端登出接口（清除服务端会话）
-      const res = await fetch("/api/auth/logout", { method: "POST" });
+      const res = await fetch("http://localhost:3001/auth/logout", {
+        method: "POST",
+        credentials: "include", // 保持跨域一致性
+      });
       if (res.ok) {
-        // 登出成功：清除前端用户状态 + 跳转到登录页
         setUser(null);
-        router.push("/home/login");
+        router.push(LOGIN_PATH);
       } else {
-        // 登出接口失败（如服务端错误）
         setError("登出失败，请稍后重试");
       }
     } catch (err) {
-      // 捕获登出过程中的网络错误
       console.error("登出请求失败:", err);
       setError("网络错误，登出操作未完成");
     }
   };
 
-  // 8. 加载中状态：全局统一显示加载提示（可自定义样式）
+  // 8. 加载中状态
   if (loading) {
     return (
       <div
@@ -139,7 +133,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     );
   }
 
-  // 9. 提供上下文给所有子组件，确保全局可访问
+  // 9. 提供上下文
   return (
     <AuthContext.Provider value={{ user, loading, error, logout }}>
       {children}

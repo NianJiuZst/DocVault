@@ -6,8 +6,6 @@ export class FindOrCreateUserDto {
   githubUserId: string;
   @IsOptional()
   name?: string;
-  githubUserId: string;
   email?: string | null;
   avatar?: string;
 }
-
