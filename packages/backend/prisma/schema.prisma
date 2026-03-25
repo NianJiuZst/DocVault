@@ -8,25 +8,29 @@ datasource db {
 }
 
 model User {
-  id           Int            @id @default(autoincrement())
-  githubUserId String         @unique // GitHub唯一ID（唯一索引）
+  id           Int              @id @default(autoincrement())
+  githubUserId String          @unique // GitHub唯一ID（唯一索引）
   name         String
   avatar       String
-  email        String?        // 可选字段
-  documents    Document[]     // 关联文档（一对多）
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
+  email        String?         // 可选字段
+  documents    Document[]      // 关联文档（一对多）
+  shares       DocumentShare[] // 被分享的文档
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
 }
 
 model Document {
-  id        Int               @id @default(autoincrement())
-  title     String
-  content   Json              // 富文本内容（对应PostgreSQL的JSONB）
-  userId    Int
-  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  versions  DocumentVersion[] // 关联版本（一对多）
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
+  id           Int               @id @default(autoincrement())
+  title        String
+  content      Json              // 富文本内容（对应PostgreSQL的JSONB）
+  userId       Int
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  versions     DocumentVersion[] // 关联版本（一对多）
+  shares       DocumentShare[]   // 关联分享记录
+  isPublic     Boolean           @default(false)  // 是否公开
+  shareToken   String?           // 分享令牌（随机字符串）
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 }
 
 model DocumentVersion {
@@ -36,4 +40,15 @@ model DocumentVersion {
   version   Int      // 版本号
   content   Json     // 版本内容快照
   updatedAt DateTime @default(now())
+}
+
+model DocumentShare {
+  id          Int      @id @default(autoincrement())
+  documentId  Int
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  userId      Int      // 被分享的用户ID
+  permission  String   // "viewer" | "editor"
+  createdAt   DateTime @default(now())
+
+  @@unique([documentId, userId])
 }

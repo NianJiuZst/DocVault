@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 
@@ -53,5 +53,14 @@ export class AuthController {
       path: '/',
     });
     return res.json({ message: 'Logged out successfully' });
+  }
+
+  @Get('token')
+  async getToken(@Req() req: any, @Res() res: any) {
+    const token = req.cookies['docvault_jwt'];
+    if (!token) {
+      return res.json({ token: null });
+    }
+    return res.json({ token });
   }
 }

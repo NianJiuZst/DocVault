@@ -8,63 +8,71 @@ import { TaskItem, TaskList } from "@tiptap/extension-list";
 import StarterKit from "@tiptap/starter-kit";
 import { SuggestionMenu } from "@/extension/suggestion-menu/SuggestionMenu";
 import { YoutubeExtension } from "@/extension/YouTube/YouTube";
-
-const Extensions = [
-	StarterKit.configure({
-		paragraph: {
-			HTMLAttributes: {
-				style:
-					"line-height: 1.65; margin-bottom: 1.5em; margin-top: 0.5em; font-size: 16px; color: #333333;",
-			},
-		},
-		bulletList: {
-			HTMLAttributes: {
-				style: "margin-left: 1.5em; margin-bottom: 1.5em; margin-top: 0.5em;",
-			},
-		},
-		orderedList: {
-			HTMLAttributes: {
-				style: "margin-left: 1.5em; margin-bottom: 1.5em; margin-top: 0.5em;",
-			},
-		},
-		listItem: {
-			HTMLAttributes: {
-				style: "margin-bottom: 0.75em;",
-			},
-		},
-		blockquote: {
-			HTMLAttributes: {
-				style:
-					"border-left: 4px solid #e0e0e0; padding: 12px 20px; margin: 1.5em 0; color: #555555; font-style: italic; background-color: #f8f8f8; border-radius: 0 4px 4px 0;",
-			},
-		},
-		codeBlock: {
-			HTMLAttributes: {
-				style:
-					'background-color: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 1.5em 0; font-family: "Consolas", "Monaco", "Courier New", monospace;',
-			},
-		},
-		code: {
-			HTMLAttributes: {
-				style:
-					'background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; font-family: "Consolas", "Monaco", "Courier New", monospace; font-size: 0.95em;',
-			},
-		},
-		heading: {
-			HTMLAttributes: {
-				style:
-					"margin-top: 1.8em; margin-bottom: 0.8em; font-weight: bold; color: #222222;",
-			},
-		},
-	}),
-	TextStyleKit,
-	SuggestionMenu,
-	TaskItem,
-	TaskList,
-	YoutubeExtension,
-];
+import * as Y from "yjs";
+import { HocuspocusProvider } from "@hocuspocus/provider";
+import Collaboration from "@tiptap/extension-collaboration";
 
 const AUTOSAVE_DELAY = 2000;
+const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:1234";
+
+function buildExtensions(yDoc: Y.Doc) {
+	return [
+		StarterKit.configure({
+			paragraph: {
+				HTMLAttributes: {
+					style:
+						"line-height: 1.65; margin-bottom: 1.5em; margin-top: 0.5em; font-size: 16px; color: #333333;",
+				},
+			},
+			bulletList: {
+				HTMLAttributes: {
+					style: "margin-left: 1.5em; margin-bottom: 1.5em; margin-top: 0.5em;",
+				},
+			},
+			orderedList: {
+				HTMLAttributes: {
+					style: "margin-left: 1.5em; margin-bottom: 1.5em; margin-top: 0.5em;",
+				},
+			},
+			listItem: {
+				HTMLAttributes: {
+					style: "margin-bottom: 0.75em;",
+				},
+			},
+			blockquote: {
+				HTMLAttributes: {
+					style:
+						"border-left: 4px solid #e0e0e0; padding: 12px 20px; margin: 1.5em 0; color: #555555; font-style: italic; background-color: #f8f8f8; border-radius: 0 4px 4px 0;",
+				},
+			},
+			codeBlock: {
+				HTMLAttributes: {
+					style:
+						'background-color: #f5f5f5; padding: 16px; border-radius: 6px; overflow-x: auto; margin: 1.5em 0; font-family: "Consolas", "Monaco", "Courier New", monospace;',
+				},
+			},
+			code: {
+				HTMLAttributes: {
+					style:
+						'background-color: #f5f5f5; padding: 2px 4px; border-radius: 4px; font-family: "Consolas", "Monaco", "Courier New", monospace; font-size: 0.95em;',
+				},
+			},
+			heading: {
+				HTMLAttributes: {
+					style:
+						"margin-top: 1.8em; margin-bottom: 0.8em; font-weight: bold; color: #222222;",
+				},
+			},
+			history: false,
+		}),
+		TextStyleKit,
+		SuggestionMenu,
+		TaskItem,
+		TaskList,
+		YoutubeExtension,
+		Collaboration.configure({ document: yDoc }),
+	];
+}
 
 function MenuBar({ editor }: { editor: Editor }) {
 	const editorState = useEditorState({
@@ -83,9 +91,6 @@ function MenuBar({ editor }: { editor: Editor }) {
 			isHeading1: ctx.editor.isActive("heading", { level: 1 }) ?? false,
 			isHeading2: ctx.editor.isActive("heading", { level: 2 }) ?? false,
 			isHeading3: ctx.editor.isActive("heading", { level: 3 }) ?? false,
-			isHeading4: ctx.editor.isActive("heading", { level: 4 }) ?? false,
-			isHeading5: ctx.editor.isActive("heading", { level: 5 }) ?? false,
-			isHeading6: ctx.editor.isActive("heading", { level: 6 }) ?? false,
 			isBulletList: ctx.editor.isActive("bulletList") ?? false,
 			isOrderedList: ctx.editor.isActive("orderedList") ?? false,
 			isCodeBlock: ctx.editor.isActive("codeBlock") ?? false,
@@ -109,9 +114,6 @@ function MenuBar({ editor }: { editor: Editor }) {
 				prev.isHeading1 === next.isHeading1 &&
 				prev.isHeading2 === next.isHeading2 &&
 				prev.isHeading3 === next.isHeading3 &&
-				prev.isHeading4 === next.isHeading4 &&
-				prev.isHeading5 === next.isHeading5 &&
-				prev.isHeading6 === next.isHeading6 &&
 				prev.isBulletList === next.isBulletList &&
 				prev.isOrderedList === next.isOrderedList &&
 				prev.isCodeBlock === next.isCodeBlock &&
@@ -250,12 +252,6 @@ function MenuBar({ editor }: { editor: Editor }) {
 					Horizontal rule
 				</button>
 				<button
-					onClick={() => editor.chain().focus().setHardBreak().run()}
-					style={getButtonStyle(false)}
-				>
-					Hard break
-				</button>
-				<button
 					onClick={() => editor.chain().focus().undo().run()}
 					disabled={!editorState.canUndo}
 					style={getButtonStyle(false, !editorState.canUndo)}
@@ -289,7 +285,10 @@ export default function DocEditor() {
 	const docId = params.id as string;
 	const [docData, setDocData] = useState<{ title: string; content: any } | null>(null);
 	const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+	const [collaborators, setCollaborators] = useState<number>(0);
 	const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+	const yDocRef = useRef<Y.Doc>(new Y.Doc());
+	const providerRef = useRef<HocuspocusProvider | null>(null);
 
 	const saveDocument = useCallback(
 		async (content: any) => {
@@ -314,6 +313,29 @@ export default function DocEditor() {
 
 	useEffect(() => {
 		if (!docId) return;
+
+		// Connect WebSocket collaboration
+		fetch("http://localhost:3001/auth/token", { credentials: "include" })
+			.then((r) => r.json())
+			.then(({ token }) => {
+				if (providerRef.current) providerRef.current.destroy();
+
+				const provider = new HocuspocusProvider({
+					url: WS_URL,
+					name: `doc-${docId}`,
+					document: yDocRef.current,
+					token: token ?? "",
+					onConnect: () => console.log("Collab connected"),
+					onDisconnect: () => console.log("Collab disconnected"),
+					onAwarenessChange: ({ states }) => {
+						setCollaborators(states.size);
+					},
+				});
+				providerRef.current = provider;
+			})
+			.catch(console.error);
+
+		// Load document data
 		fetch(`http://localhost:3001/documents/${docId}`, { credentials: "include" })
 			.then((r) => r.json())
 			.then((data) => {
@@ -322,13 +344,17 @@ export default function DocEditor() {
 				}
 			})
 			.catch(console.error);
+
+		return () => {
+			providerRef.current?.destroy();
+		};
 	}, [docId]);
 
 	const editor = useEditor({
-		extensions: Extensions,
+		extensions: buildExtensions(yDocRef.current),
 		immediatelyRender: false,
 		injectCSS: false,
-		content: docData?.content ?? "",
+		content: "",
 		autofocus: true,
 		shouldRerenderOnTransaction: false,
 		onUpdate: ({ editor }) => {
@@ -339,6 +365,7 @@ export default function DocEditor() {
 		},
 	});
 
+	// Load content once document data arrives
 	useEffect(() => {
 		if (docData?.content && editor) {
 			editor.commands.setContent(docData.content);
@@ -346,23 +373,33 @@ export default function DocEditor() {
 	}, [docData, editor]);
 
 	const statusLabel =
-		saveStatus === "saving" ? "保存中..." : saveStatus === "error" ? "保存失败" : "已保存";
+		saveStatus === "saving"
+			? "保存中..."
+			: saveStatus === "error"
+				? "保存失败"
+				: "已保存";
+	const collabLabel = collaborators > 1 ? `${collaborators} 人正在编辑` : "";
 
 	return (
 		<div className="w-full h-[calc(100vh-2rem)] p-4 bg-white flex flex-col">
 			<div className="flex items-center justify-between mb-2">
 				<MenuBar editor={editor} />
-				<span
-					className={`text-sm ${
-						saveStatus === "error"
-							? "text-red-500"
-							: saveStatus === "saving"
-								? "text-yellow-500"
-								: "text-green-500"
-					}`}
-				>
-					{statusLabel}
-				</span>
+				<div className="flex items-center gap-4">
+					{collabLabel && (
+						<span className="text-sm text-blue-500">{collabLabel}</span>
+					)}
+					<span
+						className={`text-sm ${
+							saveStatus === "error"
+								? "text-red-500"
+								: saveStatus === "saving"
+									? "text-yellow-500"
+									: "text-green-500"
+						}`}
+					>
+						{statusLabel}
+					</span>
+				</div>
 			</div>
 			<div className="flex-1 relative">
 				<div className="h-full overflow-y-auto relative w-full outline-none">

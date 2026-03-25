@@ -22,6 +22,14 @@ interface DocumentListResponse {
 
 type TabType = "recent" | "shared" | "favorites";
 
+interface SharedDocItem {
+  id: number;
+  title: string;
+  permission: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export default function CloudDocsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("recent");
   const [documents, setDocuments] = useState<DocumentListResponse | null>(null);
@@ -32,8 +40,28 @@ export default function CloudDocsPage() {
   useEffect(() => {
     if (activeTab === "recent") {
       fetchDocuments();
+    } else if (activeTab === "shared") {
+      fetchSharedDocuments();
     }
   }, [activeTab]);
+
+  const fetchSharedDocuments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("http://localhost:3001/documents/shared", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch shared documents");
+      const data: SharedDocItem[] = await res.json();
+      setDocuments({ total: data.length, page: 1, pageSize: 50, items: data });
+    } catch (err) {
+      console.error(err);
+      setError("加载共享文档失败，请稍后重试");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -166,7 +194,20 @@ export default function CloudDocsPage() {
                       </p>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-400">{formatDate(doc.updatedAt)}</div>
+                  <div className="flex items-center gap-2">
+                    {activeTab === "shared" && (
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          (doc as any).permission === "editor"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-gray-100 text-gray-600"
+                        }`}
+                      >
+                        {(doc as any).permission === "editor" ? "可编辑" : "只读"}
+                      </span>
+                    )}
+                    <span className="text-sm text-gray-400">{formatDate(doc.updatedAt)}</span>
+                  </div>
                 </div>
               ))}
             </div>

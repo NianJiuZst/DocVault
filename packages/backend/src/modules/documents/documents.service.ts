@@ -1,8 +1,9 @@
-import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/update-document.dto';
 import { DocumentListResponse } from './interfaces/document-info.interface';
+import * as crypto from 'crypto';
 
 @Injectable()
 export class DocumentsService {
@@ -119,5 +120,91 @@ export class DocumentsService {
       where: { id: documentId },
       data: { content: version.content },
     });
+  }
+
+  async share(documentId: number, userId: number, permission: 'viewer' | 'editor') {
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+
+    const share = await this.prisma.documentShare.upsert({
+      where: { documentId_userId: { documentId, userId } },
+      update: { permission },
+      create: { documentId, userId, permission },
+    });
+    return share;
+  }
+
+  async revokeShare(documentId: number, targetUserId: number, userId: number) {
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+
+    await this.prisma.documentShare.deleteMany({
+      where: { documentId, userId: targetUserId },
+    });
+    return { success: true };
+  }
+
+  async generateShareLink(documentId: number, userId: number) {
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+
+    const shareToken = doc.shareToken ?? crypto.randomBytes(16).toString('hex');
+    const updated = await this.prisma.document.update({
+      where: { id: documentId },
+      data: { shareToken, isPublic: true },
+    });
+    return { shareToken: updated.shareToken };
+  }
+
+  async findByShareToken(shareToken: string) {
+    const doc = await this.prisma.document.findUnique({ where: { shareToken } });
+    if (!doc) throw new NotFoundException('Document not found');
+    return doc;
+  }
+
+  async getShares(documentId: number, userId: number) {
+    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+
+    return this.prisma.documentShare.findMany({
+      where: { documentId },
+      include: { user: { select: { id: true, name: true, avatar: true } } },
+    });
+  }
+
+  async search(query: string, userId: number) {
+    return this.prisma.document.findMany({
+      where: {
+        userId,
+        OR: [
+          { title: { contains: query, mode: 'insensitive' } },
+        ],
+      },
+      select: { id: true, title: true, createdAt: true, updatedAt: true },
+      orderBy: { updatedAt: 'desc' },
+      take: 20,
+    });
+  }
+
+  async findSharedWithUser(userId: number) {
+    const shares = await this.prisma.documentShare.findMany({
+      where: { userId },
+      include: {
+        document: {
+          select: { id: true, title: true, createdAt: true, updatedAt: true },
+        },
+      },
+    });
+    return shares.map((s) => ({
+      id: s.document.id,
+      title: s.document.title,
+      permission: s.permission,
+      createdAt: s.document.createdAt.toISOString(),
+      updatedAt: s.document.updatedAt.toISOString(),
+    }));
   }
 }
