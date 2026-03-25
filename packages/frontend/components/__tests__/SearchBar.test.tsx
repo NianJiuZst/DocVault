@@ -48,4 +48,55 @@ describe('SearchBar', () => {
       );
     });
   });
+
+  it('should display dropdown with results when API returns data', async () => {
+    const mockResults = [
+      { id: 1, title: 'Doc A', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+      { id: 2, title: 'Doc B', createdAt: '2024-01-02', updatedAt: '2024-01-02' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => mockResults });
+    render(<SearchBar />);
+    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    await userEvent.type(input, 'doc');
+    await waitFor(() => {
+      expect(screen.getByText('Doc A')).toBeInTheDocument();
+      expect(screen.getByText('Doc B')).toBeInTheDocument();
+    });
+  });
+
+  it('should navigate to correct document path on result click', async () => {
+    const mockResults = [
+      { id: 42, title: 'Target Doc', createdAt: '2024-01-01', updatedAt: '2024-01-01' },
+    ];
+    mockFetch.mockResolvedValue({ ok: true, json: async () => mockResults });
+    render(<SearchBar />);
+    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    await userEvent.type(input, 'target');
+    await waitFor(() => screen.getByText('Target Doc'));
+    await userEvent.click(screen.getByText('Target Doc'));
+    expect(mockPush).toHaveBeenCalledWith('/home/cloud-docs/42');
+  });
+
+  it('should URL-encode special characters in query', async () => {
+    mockFetch.mockResolvedValue({ ok: true, json: async () => [] });
+    render(<SearchBar />);
+    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    await userEvent.type(input, 'hello world');
+    await waitFor(() => {
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('hello%20world'),
+        expect.any(Object),
+      );
+    });
+  });
+
+  it('should not navigate when fetch fails', async () => {
+    mockFetch.mockRejectedValue(new Error('network error'));
+    render(<SearchBar />);
+    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    await userEvent.type(input, 'fail');
+    await waitFor(() => {
+      expect(mockPush).not.toHaveBeenCalled();
+    });
+  });
 });
