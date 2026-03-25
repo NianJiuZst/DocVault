@@ -8,6 +8,17 @@ All notable changes to this project will be documented in this file.
 
 #### Frontend
 
+- **Dark/Light Theme** (`src/theme/ThemeProvider.tsx`)
+  - ThemeProvider context with localStorage persistence
+  - Tailwind v4 `@custom-variant dark` in globals.css
+  - Dark mode classes on sidebar, topbar, main content
+  - ThemeToggle button (sun/moon icon) in navigation bar
+
+- **Playwright E2E** (`e2e/docvault.spec.ts`)
+  - 6 smoke tests: login page, GitHub button, search bar, messages/calendar placeholders
+  - Configured for Chromium, auto-starts dev server
+  - Requires backend .env configured (DATABASE_URL, GitHub OAuth)
+
 - **Unit Tests** (vitest + @testing-library)
   - `vitest.config.ts` — jsdom environment, globals, setupFiles
   - `vitest.setup.ts` — imports `@testing-library/jest-dom`
