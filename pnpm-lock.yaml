@@ -121,7 +121,7 @@ importers:
         specifier: ^4.2.0
         version: 4.2.0
 
-  packages/fronted:
+  packages/frontend:
     dependencies:
       '@hocuspocus/provider':
         specifier: ^3.4.4
@@ -219,13 +219,13 @@ importers:
         version: 6.0.1(vite@8.0.2(@types/node@24.3.1)(jiti@2.5.1)(terser@5.43.1))
       autoprefixer:
         specifier: ^10.4.21
-        version: 10.4.21(postcss@8.5.6)
+        version: 10.4.21(postcss@8.5.8)
       jsdom:
         specifier: ^29.0.1
         version: 29.0.1(@noble/hashes@1.8.0)
       postcss:
         specifier: ^8.5.6
-        version: 8.5.6
+        version: 8.5.8
       tailwindcss:
         specifier: ^4.1.13
         version: 4.1.13
@@ -557,9 +557,6 @@ packages:
 
   '@emnapi/core@1.9.1':
     resolution: {integrity: sha512-mukuNALVsoix/w1BJwFzwXBN/dHeejQtuVzcDsfOEsdpCumXb/E9j8w11h5S54tT1xhifGfbbSm/ICrObRb3KA==}
-
-  '@emnapi/runtime@1.5.0':
-    resolution: {integrity: sha512-97/BJ3iXHww3djw6hYIfErCZFee7qCtrneuLa20UXFCOTCfBM2cvQHjWJ2EG0s0MtdNwInarqCTz35i4wWXHsQ==}
 
   '@emnapi/runtime@1.9.1':
     resolution: {integrity: sha512-VYi5+ZVLhpgK4hQ0TAjiQiZ6ol0oe4mBx7mVv7IflsiEp0OWoVsp/+f9Vc1hOhE0TtkORVrI1GvzyreqpgWtkA==}
@@ -3795,10 +3792,6 @@ packages:
   lru-cache@10.4.3:
     resolution: {integrity: sha512-JNAzZcXrCt42VGLuYz0zfAzDfAvJWW6AfYlDBQyDV5DClI2m5sAmK+OIO7s59XfsRsWHp02jAJrRadPRGTt6SQ==}
 
-  lru-cache@11.1.0:
-    resolution: {integrity: sha512-QIXZUBJUx+2zHUdQujWejBkcD9+cs94tLn0+YL8UrCh+D5sCXZ4c7LaEH48pNwRY3MLDgqUFyhlCyjJPf1WP0A==}
-    engines: {node: 20 || >=22}
-
   lru-cache@11.2.7:
     resolution: {integrity: sha512-aY/R+aEsRelme17KGQa/1ZSIpLpNYYrhcrepKTZgE+W3WM16YMCaPwOHLHsmopZHELU0Ojin1lPVxKR0MihncA==}
     engines: {node: 20 || >=22}
@@ -3816,9 +3809,6 @@ packages:
 
   magic-string@0.30.17:
     resolution: {integrity: sha512-sNPKHvyjVf7gyjwS4xGTaW/mCnF8wnjtifKBEhxfZ7E/S8tQ0rssrwGNn6q8JH/ohItJfSQp9mBtQYuTlH5QnA==}
-
-  magic-string@0.30.19:
-    resolution: {integrity: sha512-2N21sPY9Ws53PZvsEpVtNuSW+ScYbQdp4b9qUaL+9QkHUrGFKo56Lg9Emg5s9V/qrtNBmiR01sYhUOwu3H+VOw==}
 
   magic-string@0.30.21:
     resolution: {integrity: sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==}
@@ -3990,6 +3980,7 @@ packages:
   next@15.5.4:
     resolution: {integrity: sha512-xH4Yjhb82sFYQfY3vbkJfgSDgXvBB6a8xPs9i35k6oZJRoQRihZH+4s9Yo2qsWpzBmZ3lPXaJ2KPXLfkvW4LnA==}
     engines: {node: ^18.18.0 || ^19.8.0 || >= 20.0.0}
+    deprecated: This version has a security vulnerability. Please upgrade to a patched version. See https://nextjs.org/blog/CVE-2025-66478 for more details.
     hasBin: true
     peerDependencies:
       '@opentelemetry/api': ^1.1.0
@@ -4213,10 +4204,6 @@ packages:
 
   postcss@8.4.31:
     resolution: {integrity: sha512-PS08Iboia9mts/2ygV3eLpY5ghnUcfLV/EXTOW1E2qYxJKGGBUtNjN76FYHnMs36RmARn41bC0AZmn+rR0OVpQ==}
-    engines: {node: ^10 || ^12 || >=14}
-
-  postcss@8.5.6:
-    resolution: {integrity: sha512-3Ybi1tAuwAP9s0r1UQ2J4n5Y0G05bJkpUIO0/bI9MhwmD70S5aTWbXGBwxHrelT+XM1k6dM0pk+SwNkpTRN7Pg==}
     engines: {node: ^10 || ^12 || >=14}
 
   postcss@8.5.8:
@@ -4703,6 +4690,7 @@ packages:
   tar@7.4.3:
     resolution: {integrity: sha512-5S7Va8hKfV7W5U6g3aYxXmlPoZVAwUMy9AOKyF2fVuZa2UD3qZjg578OrLRt8PcNN1PleVaL/5/yYATNL0ICUw==}
     engines: {node: '>=18'}
+    deprecated: Old versions of tar are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update. Support for old versions may be purchased (at exorbitant rates) by contacting i@izs.me
 
   terser-webpack-plugin@5.3.14:
     resolution: {integrity: sha512-vkZjpUjb6OMS7dhV+tILUW6BhpDR7P2L/aQSAv+Uwk+m8KATX9EccViHTJR2qDtACKPIYndLGCyl3FMo+r2LMw==}
@@ -4737,9 +4725,6 @@ packages:
 
   tinybench@2.9.0:
     resolution: {integrity: sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==}
-
-  tinyexec@1.0.1:
-    resolution: {integrity: sha512-5uC6DDlmeqiOwCPmK9jMSdOuZTh8bU39Ys6yidB+UTt5hfZUPGAypSgFRiEp+jbi9qH40BLDvy85jIU88wKSqw==}
 
   tinyexec@1.0.4:
     resolution: {integrity: sha512-u9r3uZC0bdpGOXtlxUIdwf9pkmvhqJdrVCH9fapQtgy/OeTTMZ1nqH7agtvEfmGui6e1XxjcdrlxvxJvc3sMqw==}
@@ -5527,11 +5512,6 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@emnapi/runtime@1.5.0':
-    dependencies:
-      tslib: 2.8.1
-    optional: true
-
   '@emnapi/runtime@1.9.1':
     dependencies:
       tslib: 2.8.1
@@ -5685,7 +5665,7 @@ snapshots:
 
   '@img/sharp-wasm32@0.34.3':
     dependencies:
-      '@emnapi/runtime': 1.5.0
+      '@emnapi/runtime': 1.9.1
     optional: true
 
   '@img/sharp-win32-arm64@0.34.3':
@@ -6151,7 +6131,7 @@ snapshots:
   '@napi-rs/wasm-runtime@0.2.12':
     dependencies:
       '@emnapi/core': 1.5.0
-      '@emnapi/runtime': 1.5.0
+      '@emnapi/runtime': 1.9.1
       '@tybys/wasm-util': 0.10.0
     optional: true
 
@@ -6519,7 +6499,7 @@ snapshots:
       enhanced-resolve: 5.18.3
       jiti: 2.5.1
       lightningcss: 1.30.1
-      magic-string: 0.30.19
+      magic-string: 0.30.21
       source-map-js: 1.2.1
       tailwindcss: 4.1.13
 
@@ -6582,7 +6562,7 @@ snapshots:
       '@alloc/quick-lru': 5.2.0
       '@tailwindcss/node': 4.1.13
       '@tailwindcss/oxide': 4.1.13
-      postcss: 8.5.6
+      postcss: 8.5.8
       tailwindcss: 4.1.13
 
   '@testing-library/dom@10.4.1':
@@ -7395,14 +7375,14 @@ snapshots:
 
   asynckit@0.4.0: {}
 
-  autoprefixer@10.4.21(postcss@8.5.6):
+  autoprefixer@10.4.21(postcss@8.5.8):
     dependencies:
       browserslist: 4.25.4
       caniuse-lite: 1.0.30001739
       fraction.js: 4.3.7
       normalize-range: 0.1.2
       picocolors: 1.1.1
-      postcss: 8.5.6
+      postcss: 8.5.8
       postcss-value-parser: 4.2.0
 
   axios@1.12.2:
@@ -8944,8 +8924,6 @@ snapshots:
 
   lru-cache@10.4.3: {}
 
-  lru-cache@11.1.0: {}
-
   lru-cache@11.2.7: {}
 
   lru-cache@5.1.1:
@@ -8959,10 +8937,6 @@ snapshots:
   lz-string@1.5.0: {}
 
   magic-string@0.30.17:
-    dependencies:
-      '@jridgewell/sourcemap-codec': 1.5.5
-
-  magic-string@0.30.19:
     dependencies:
       '@jridgewell/sourcemap-codec': 1.5.5
 
@@ -9153,7 +9127,7 @@ snapshots:
       consola: 3.4.2
       pathe: 2.0.3
       pkg-types: 2.3.0
-      tinyexec: 1.0.1
+      tinyexec: 1.0.4
 
   oauth@0.9.15: {}
 
@@ -9250,7 +9224,7 @@ snapshots:
 
   path-scurry@2.0.0:
     dependencies:
-      lru-cache: 11.1.0
+      lru-cache: 11.2.7
       minipass: 7.1.2
 
   path-to-regexp@8.2.0: {}
@@ -9300,12 +9274,6 @@ snapshots:
   postcss-value-parser@4.2.0: {}
 
   postcss@8.4.31:
-    dependencies:
-      nanoid: 3.3.11
-      picocolors: 1.1.1
-      source-map-js: 1.2.1
-
-  postcss@8.5.6:
     dependencies:
       nanoid: 3.3.11
       picocolors: 1.1.1
@@ -9921,8 +9889,6 @@ snapshots:
   through@2.3.8: {}
 
   tinybench@2.9.0: {}
-
-  tinyexec@1.0.1: {}
 
   tinyexec@1.0.4: {}
 
