@@ -28,7 +28,7 @@ model Document {
   versions     DocumentVersion[] // 关联版本（一对多）
   shares       DocumentShare[]   // 关联分享记录
   isPublic     Boolean           @default(false)  // 是否公开
-  shareToken   String?           // 分享令牌（随机字符串）
+  shareToken   String?           @unique // 分享令牌（随机字符串）
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 }
@@ -46,7 +46,8 @@ model DocumentShare {
   id          Int      @id @default(autoincrement())
   documentId  Int
   document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  userId      Int      // 被分享的用户ID
+  userId      Int
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   permission  String   // "viewer" | "editor"
   createdAt   DateTime @default(now())
 

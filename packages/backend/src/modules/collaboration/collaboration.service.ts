@@ -6,23 +6,19 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
   private server: Server;
 
   onModuleInit() {
-    this.server = Server.configure({
+    this.server = new Server({
       port: 1234,
-
-      async onAuthenticate(data) {
-        const { token, documentName } = data;
+      onAuthenticate: async (data) => {
+        const { token } = data;
         if (!token) {
           throw new Error('Unauthorized: no token provided');
         }
-        // Token will be verified in the extension; here we just pass through
-        return { user: { name: `User-${token.slice(0, 6)}` } };
+        return { user: { name: `User-${String(token).slice(0, 6)}` } };
       },
-
-      async onConnect(data) {
+      onConnect: async (data) => {
         console.log(`Client connected to document: ${data.documentName}`);
       },
-
-      async onDisconnect(data) {
+      onDisconnect: async (data) => {
         console.log(`Client disconnected from document: ${data.documentName}`);
       },
     });

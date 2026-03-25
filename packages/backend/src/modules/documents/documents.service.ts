@@ -118,7 +118,7 @@ export class DocumentsService {
     await this.createVersion(doc);
     return this.prisma.document.update({
       where: { id: documentId },
-      data: { content: version.content },
+      data: { content: version.content as any },
     });
   }
 
