@@ -2,98 +2,92 @@
 import { VscNewFile } from "react-icons/vsc";
 import { IoCloudUploadOutline } from "react-icons/io5";
 import { CgTemplate } from "react-icons/cg";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { FaRegFileAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-interface Document {
+
+interface DocumentItem {
   id: number;
-  name: string;
-  author: string;
-  lastOpen: string;
+  title: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-const documentData: { [key: string]: Document[] } = {
-  recent: [
-    {
-      id: 1,
-      name: "产品规划方案2023",
-      author: "张明",
-      lastOpen: "2023-10-06 14:30",
-    },
-    {
-      id: 2,
-      name: "市场调研报告",
-      author: "李华",
-      lastOpen: "2023-10-05 09:15",
-    },
-    {
-      id: 3,
-      name: "项目进度跟踪表",
-      author: "王芳",
-      lastOpen: "2023-10-04 16:45",
-    },
-    {
-      id: 4,
-      name: "季度财务分析",
-      author: "赵伟",
-      lastOpen: "2023-10-03 11:20",
-    },
-    {
-      id: 5,
-      name: "团队周会记录",
-      author: "陈静",
-      lastOpen: "2023-10-02 15:10",
-    },
-  ],
-  shared: [
-    {
-      id: 6,
-      name: "客户需求清单",
-      author: "刘敏",
-      lastOpen: "2023-10-06 10:05",
-    },
-    { id: 7, name: "设计资源库", author: "周强", lastOpen: "2023-10-05 13:40" },
-    {
-      id: 8,
-      name: "测试用例集合",
-      author: "吴佳",
-      lastOpen: "2023-10-04 08:50",
-    },
-  ],
-  favorites: [
-    {
-      id: 9,
-      name: "品牌视觉规范",
-      author: "郑亮",
-      lastOpen: "2023-10-06 16:20",
-    },
-    {
-      id: 10,
-      name: "产品路线图",
-      author: "张明",
-      lastOpen: "2023-10-05 11:30",
-    },
-    {
-      id: 11,
-      name: "用户研究报告",
-      author: "孙悦",
-      lastOpen: "2023-10-03 09:45",
-    },
-    {
-      id: 12,
-      name: "开发规范文档",
-      author: "林达",
-      lastOpen: "2023-10-01 14:25",
-    },
-  ],
-};
+interface DocumentListResponse {
+  total: number;
+  page: number;
+  pageSize: number;
+  items: DocumentItem[];
+}
+
+type TabType = "recent" | "shared" | "favorites";
 
 export default function CloudDocsPage() {
-  const [activeTab, setActiveTab] = useState("recent");
+  const [activeTab, setActiveTab] = useState<TabType>("recent");
+  const [documents, setDocuments] = useState<DocumentListResponse | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const router = useRouter();
-  const handleNewDoc = () => {
-    router.push("/home/cloud-docs/1");
+
+  useEffect(() => {
+    if (activeTab === "recent") {
+      fetchDocuments();
+    }
+  }, [activeTab]);
+
+  const fetchDocuments = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("http://localhost:3001/documents/list?page=1&pageSize=50", {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to fetch documents");
+      const data: DocumentListResponse = await res.json();
+      setDocuments(data);
+    } catch (err) {
+      console.error(err);
+      setError("加载文档失败，请稍后重试");
+    } finally {
+      setLoading(false);
+    }
   };
+
+  const handleNewDoc = async () => {
+    try {
+      const res = await fetch("http://localhost:3001/documents/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: "未命名文档" }),
+      });
+      if (!res.ok) throw new Error("Failed to create document");
+      const doc = await res.json();
+      router.push(`/home/cloud-docs/${doc.id}`);
+    } catch (err) {
+      console.error(err);
+      setError("创建文档失败，请稍后重试");
+    }
+  };
+
+  const handleDocClick = (id: number) => {
+    router.push(`/home/cloud-docs/${id}`);
+  };
+
+  const formatDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString("zh-CN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return iso;
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white flex justify-start flex-col w-full ">
       <div className="container pl-[4%] py-6 max-w-7xl">
@@ -125,7 +119,7 @@ export default function CloudDocsPage() {
                   : "text-gray-500 hover:text-gray-900"
               }`}
             >
-              <span>最近访问</span>
+              <span>我的文档</span>
             </button>
             <button
               onClick={() => setActiveTab("shared")}
@@ -149,27 +143,39 @@ export default function CloudDocsPage() {
             </button>
           </div>
         </div>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="divide-y divide-gray-100">
-            {documentData[activeTab].map((doc) => (
-              <div
-                key={doc.id}
-                className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150 flex items-center justify-between"
-              >
-                <div className="flex items-center gap-4">
-                  <FaRegFileAlt className="h-5 w-5 text-gray-600 mt-0.5" />
-                  <div>
-                    <h3 className="font-medium text-gray-900">{doc.name}</h3>
-                    <p className="text-sm text-gray-500 mt-0.5">
-                      作者: {doc.author}
-                    </p>
+
+        {loading ? (
+          <div className="text-center py-12 text-gray-500">加载中...</div>
+        ) : error ? (
+          <div className="text-center py-12 text-red-500">{error}</div>
+        ) : documents && documents.items.length > 0 ? (
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+            <div className="divide-y divide-gray-100">
+              {documents.items.map((doc) => (
+                <div
+                  key={doc.id}
+                  onClick={() => handleDocClick(doc.id)}
+                  className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150 flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-4">
+                    <FaRegFileAlt className="h-5 w-5 text-gray-600 mt-0.5" />
+                    <div>
+                      <h3 className="font-medium text-gray-900">{doc.title}</h3>
+                      <p className="text-sm text-gray-500 mt-0.5">
+                        创建于 {formatDate(doc.createdAt)}
+                      </p>
+                    </div>
                   </div>
+                  <div className="text-sm text-gray-400">{formatDate(doc.updatedAt)}</div>
                 </div>
-                <div className="text-sm text-gray-400">{doc.lastOpen}</div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-12 text-gray-400">
+            暂无文档，点击「新建」创建一个吧
+          </div>
+        )}
       </div>
     </div>
   );

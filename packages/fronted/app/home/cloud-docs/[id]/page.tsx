@@ -1,5 +1,6 @@
 "use client";
 import { useParams } from "next/navigation";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import type { Editor } from "@tiptap/react";
 import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
@@ -63,6 +64,8 @@ const Extensions = [
 	YoutubeExtension,
 ];
 
+const AUTOSAVE_DELAY = 2000;
+
 function MenuBar({ editor }: { editor: Editor }) {
 	const editorState = useEditorState({
 		editor,
@@ -90,7 +93,6 @@ function MenuBar({ editor }: { editor: Editor }) {
 			canUndo: ctx.editor.can().chain().undo().run() ?? false,
 			canRedo: ctx.editor.can().chain().redo().run() ?? false,
 		}),
-		// 自定义相等性检查：仅当订阅的状态真正变化时才触发重渲染
 		equalityFn: (prev, next) => {
 			if (!prev || !next) return false;
 			return (
@@ -280,39 +282,88 @@ const getButtonStyle = (isActive: boolean, disabled = false) => ({
 	color: isActive ? "white" : "black",
 	cursor: disabled ? "not-allowed" : "pointer",
 	opacity: disabled ? 0.6 : 1,
-	"&:hover": {
-		background: isActive ? "#0051aa" : "#f5f5f5",
-	},
 });
 
 export default function DocEditor() {
 	const params = useParams();
 	const docId = params.id as string;
+	const [docData, setDocData] = useState<{ title: string; content: any } | null>(null);
+	const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+	const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+	const saveDocument = useCallback(
+		async (content: any) => {
+			if (!docId) return;
+			setSaveStatus("saving");
+			try {
+				const res = await fetch("http://localhost:3001/documents/update", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					credentials: "include",
+					body: JSON.stringify({ id: Number(docId), content }),
+				});
+				if (!res.ok) throw new Error("Save failed");
+				setSaveStatus("saved");
+			} catch (err) {
+				console.error("Auto-save failed:", err);
+				setSaveStatus("error");
+			}
+		},
+		[docId],
+	);
+
+	useEffect(() => {
+		if (!docId) return;
+		fetch(`http://localhost:3001/documents/${docId}`, { credentials: "include" })
+			.then((r) => r.json())
+			.then((data) => {
+				if (data && data.id) {
+					setDocData({ title: data.title, content: data.content });
+				}
+			})
+			.catch(console.error);
+	}, [docId]);
 
 	const editor = useEditor({
 		extensions: Extensions,
 		immediatelyRender: false,
 		injectCSS: false,
-		content: `
-      <h1>${docId}</h1>
-      <p>
-        这是文档 <strong>${docId}</strong> 的内容区域，可以使用上方工具栏进行编辑。
-      </p>
-      <p>
-        支持格式化、列表、代码块等功能，尝试使用工具栏按钮进行编辑吧！
-      </p>
-    `,
+		content: docData?.content ?? "",
 		autofocus: true,
 		shouldRerenderOnTransaction: false,
+		onUpdate: ({ editor }) => {
+			if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+			saveTimerRef.current = setTimeout(() => {
+				saveDocument(editor.getJSON());
+			}, AUTOSAVE_DELAY);
+		},
 	});
 
-	if (!editor) {
-		return <div>加载编辑器中...</div>;
-	}
+	useEffect(() => {
+		if (docData?.content && editor) {
+			editor.commands.setContent(docData.content);
+		}
+	}, [docData, editor]);
+
+	const statusLabel =
+		saveStatus === "saving" ? "保存中..." : saveStatus === "error" ? "保存失败" : "已保存";
 
 	return (
 		<div className="w-full h-[calc(100vh-2rem)] p-4 bg-white flex flex-col">
-			<MenuBar editor={editor} />
+			<div className="flex items-center justify-between mb-2">
+				<MenuBar editor={editor} />
+				<span
+					className={`text-sm ${
+						saveStatus === "error"
+							? "text-red-500"
+							: saveStatus === "saving"
+								? "text-yellow-500"
+								: "text-green-500"
+					}`}
+				>
+					{statusLabel}
+				</span>
+			</div>
 			<div className="flex-1 relative">
 				<div className="h-full overflow-y-auto relative w-full outline-none">
 					<EditorContent
