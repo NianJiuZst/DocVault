@@ -6,6 +6,16 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 
+#### Frontend
+
+- **Unit Tests** (vitest + @testing-library)
+  - `vitest.config.ts` — jsdom environment, globals, setupFiles
+  - `vitest.setup.ts` — imports `@testing-library/jest-dom`
+  - `components/__tests__/SearchBar.test.tsx` — 4 tests: render, input state, empty query guard, fetch call verification
+  - `app/home/messages/__tests__/page.test.tsx` — 2 tests: placeholder UI, emoji
+  - `app/home/calendar/__tests__/page.test.tsx` — 2 tests: placeholder UI, emoji
+  - 8 tests total, 100% pass rate
+
 #### Backend
 
 - **Environment Validation** (`src/config/validation.schema.ts`)
