@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Controller, Get, Post, Query, Res } from '@nestjs/common';
 import { Response } from 'express';
 import { AuthService } from './auth.service';
 
@@ -41,5 +41,17 @@ export class AuthController {
         `${process.env.FRONTEND_URL}/login?error=登录失败，请重试`,
       );
     }
+  }
+
+  @Post('logout')
+  async logout(@Res() res: any) {
+    res.cookie('docvault_jwt', '', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 0,
+      path: '/',
+    });
+    return res.json({ message: 'Logged out successfully' });
   }
 }
