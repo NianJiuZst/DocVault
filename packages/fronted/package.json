@@ -6,7 +6,8 @@
 	"scripts": {
 		"dev": "next dev --turbopack",
 		"build": "next build --turbopack",
-		"start": "next start"
+		"start": "next start",
+		"test": "vitest"
 	},
 	"dependencies": {
 		"@hocuspocus/provider": "^3.4.4",
@@ -34,10 +35,17 @@
 		"yjs": "^13.6.30"
 	},
 	"devDependencies": {
+		"@testing-library/dom": "^10.4.1",
+		"@testing-library/jest-dom": "^6.9.1",
+		"@testing-library/react": "^16.3.2",
+		"@testing-library/user-event": "^14.6.1",
 		"@types/react": "^19",
 		"@types/react-dom": "^19",
+		"@vitejs/plugin-react": "^6.0.1",
 		"autoprefixer": "^10.4.21",
+		"jsdom": "^29.0.1",
 		"postcss": "^8.5.6",
-		"tailwindcss": "^4.1.13"
+		"tailwindcss": "^4.1.13",
+		"vitest": "^4.1.1"
 	}
 }
