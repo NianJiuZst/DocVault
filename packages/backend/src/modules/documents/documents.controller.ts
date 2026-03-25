@@ -1,19 +1,73 @@
-// src/users/users.controller.ts
-import { Controller, Post, Body,Get } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  ParseIntPipe,
+  Req,
+} from '@nestjs/common';
+import { Request } from 'express';
 import { DocumentsService } from './documents.service';
-import { FindDocumentDto } from './dto/find-document.dto';
-import { FindDocumentsInterface } from './interfaces/find-documents.interface';
+import { CreateDocumentDto } from './dto/create-document.dto';
+import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/update-document.dto';
+import { AuthGuard } from '../auth/auth.guard';
+import { DocumentListResponse } from './interfaces/document-info.interface';
 
 @Controller('documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post('find')
-  async find(@Body() dto: FindDocumentDto): Promise<FindDocumentsInterface> {
-    const document = await this.documentsService.find(dto);
-    return {
-      id: document ? document.id : null,
-      title: document ? document.title : '没找到',
-    };
+  @Post('create')
+  @UseGuards(AuthGuard)
+  async create(@Body() dto: CreateDocumentDto, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.create(dto, userId);
+  }
+
+  @Post('update')
+  @UseGuards(AuthGuard)
+  async update(@Body() dto: UpdateDocumentDto, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.update(dto, userId);
+  }
+
+  @Post('delete')
+  @UseGuards(AuthGuard)
+  async delete(@Body() dto: DeleteDocumentDto, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.delete(dto, userId);
+  }
+
+  @Get('list')
+  @UseGuards(AuthGuard)
+  async list(@Query() dto: ListDocumentDto, @Req() req: Request): Promise<DocumentListResponse> {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.findAllByUser(dto, userId);
+  }
+
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  async find(@Param('id', ParseIntPipe) id: number) {
+    return this.documentsService.find(id);
+  }
+
+  @Get(':id/versions')
+  @UseGuards(AuthGuard)
+  async getVersions(@Param('id', ParseIntPipe) id: number) {
+    return this.documentsService.getVersions(id);
+  }
+
+  @Post(':id/rollback')
+  @UseGuards(AuthGuard)
+  async rollback(
+    @Param('id', ParseIntPipe) id: number,
+    @Body('versionId', ParseIntPipe) versionId: number,
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.rollback(id, versionId, userId);
   }
 }
