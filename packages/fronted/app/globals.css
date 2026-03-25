@@ -1,4 +1,15 @@
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Dark mode colors */
+.dark {
+  --color-bg: rgb(15, 23, 42);
+  --color-surface: rgb(30, 41, 59);
+  --color-text: rgb(226, 232, 240);
+  --color-border: rgb(51, 65, 85);
+}
+
 /* 针对 Tiptap 生成的 .ProseMirror 元素 */
 .ProseMirror:focus {
 	outline: none;
