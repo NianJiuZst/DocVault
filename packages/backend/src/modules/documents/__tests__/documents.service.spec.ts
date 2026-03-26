@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { DocumentsService } from '../../documents/documents.service';
 import { PrismaService } from '../../../prisma/prisma.service';
-import { NotFoundException, ForbiddenException } from '@nestjs/common';
+import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 const mockPrisma = {
   document: {
@@ -469,6 +469,122 @@ describe('DocumentsService', () => {
       ]);
       const result = await service.findSharedWithUser(1);
       expect(result[0].createdAt).toBe('2024-06-01T10:00:00.000Z');
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // createFolder
+  // ──────────────────────────────────────────────
+  describe('createFolder', () => {
+    it('should create a folder at root level', async () => {
+      const created = { id: 1, title: 'My Folder', isFolder: true, userId: 1, parentId: null, content: null, createdAt: new Date(), updatedAt: new Date() };
+      mockPrisma.document.create.mockResolvedValue(created);
+      const result = await service.createFolder('My Folder', 1);
+      expect(result.isFolder).toBe(true);
+      expect(mockPrisma.document.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ title: 'My Folder', isFolder: true, userId: 1, parentId: null }),
+      });
+    });
+
+    it('should create a folder inside a parent folder', async () => {
+      const parentFolder = { id: 5, isFolder: true, userId: 1 };
+      mockPrisma.document.findUnique.mockResolvedValue(parentFolder);
+      const created = { id: 6, title: 'Sub Folder', isFolder: true, userId: 1, parentId: 5 };
+      mockPrisma.document.create.mockResolvedValue(created);
+      const result = await service.createFolder('Sub Folder', 1, 5);
+      expect(result.parentId).toBe(5);
+    });
+
+    it('should throw NotFoundException when parent folder does not exist', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue(null);
+      await expect(service.createFolder('Sub', 1, 999)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when parent is not a folder', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, isFolder: false, userId: 1 });
+      await expect(service.createFolder('Sub', 1, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException when parent belongs to another user', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, isFolder: true, userId: 99 });
+      await expect(service.createFolder('Sub', 1, 1)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // getTree
+  // ──────────────────────────────────────────────
+  describe('getTree', () => {
+    it('should return empty array when no documents', async () => {
+      mockPrisma.document.findMany.mockResolvedValue([]);
+      const result = await service.getTree(1);
+      expect(result).toHaveLength(0);
+    });
+
+    it('should return top-level items with nested children', async () => {
+      const now = new Date();
+      mockPrisma.document.findMany.mockResolvedValue([
+        { id: 1, title: 'Folder A', isFolder: true, parentId: null, createdAt: now, updatedAt: now },
+        { id: 2, title: 'Doc in A', isFolder: false, parentId: 1, createdAt: now, updatedAt: now },
+        { id: 3, title: 'Root Doc', isFolder: false, parentId: null, createdAt: now, updatedAt: now },
+      ]);
+      const result = await service.getTree(1);
+      expect(result).toHaveLength(2); // Folder A + Root Doc
+      const folderA = result.find((n) => n.title === 'Folder A')!;
+      expect(folderA.children).toHaveLength(1);
+      expect(folderA.children[0].title).toBe('Doc in A');
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // moveDocument
+  // ──────────────────────────────────────────────
+  describe('moveDocument', () => {
+    it('should move document to a target folder', async () => {
+      const doc = { id: 2, userId: 1 };
+      const targetFolder = { id: 5, isFolder: true, userId: 1 };
+      mockPrisma.document.findUnique
+        .mockResolvedValueOnce(doc)   // find the doc
+        .mockResolvedValueOnce(targetFolder); // find the target
+      mockPrisma.document.update.mockResolvedValue({ ...doc, parentId: 5 });
+      const result = await service.moveDocument(2, 5, 1);
+      expect(mockPrisma.document.update).toHaveBeenCalledWith({
+        where: { id: 2 },
+        data: { parentId: 5 },
+      });
+    });
+
+    it('should move document to root (parentId = null)', async () => {
+      const doc = { id: 2, userId: 1, parentId: 5 };
+      mockPrisma.document.findUnique.mockResolvedValue(doc);
+      mockPrisma.document.update.mockResolvedValue({ ...doc, parentId: null });
+      await service.moveDocument(2, null, 1);
+      expect(mockPrisma.document.update).toHaveBeenCalledWith({
+        where: { id: 2 },
+        data: { parentId: null },
+      });
+    });
+
+    it('should throw NotFoundException when document not found', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue(null);
+      await expect(service.moveDocument(999, 1, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user does not own document', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      await expect(service.moveDocument(1, null, 1)).rejects.toThrow(ForbiddenException);
+    });
+
+    it('should throw BadRequestException when moving folder into itself', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 5, userId: 1, isFolder: true });
+      await expect(service.moveDocument(5, 5, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when target is not a folder', async () => {
+      mockPrisma.document.findUnique
+        .mockResolvedValueOnce({ id: 2, userId: 1, isFolder: false })
+        .mockResolvedValueOnce({ id: 3, isFolder: false, userId: 1 });
+      await expect(service.moveDocument(2, 3, 1)).rejects.toThrow(BadRequestException);
     });
   });
 });

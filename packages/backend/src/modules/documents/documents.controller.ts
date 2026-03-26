@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Delete,
+  Put,
   Body,
   Param,
   Query,
@@ -125,5 +126,35 @@ export class DocumentsController {
   async search(@Query('q') q: string, @Req() req: Request) {
     const userId = (req as any)._user.userId;
     return this.documentsService.search(q ?? '', userId);
+  }
+
+  // ── Folder operations ──────────────────────────────────────────
+
+  @Get('tree')
+  @UseGuards(AuthGuard)
+  async getTree(@Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.getTree(userId);
+  }
+
+  @Post('folder')
+  @UseGuards(AuthGuard)
+  async createFolder(
+    @Body() body: { title: string; parentId?: number },
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.createFolder(body.title, userId, body.parentId);
+  }
+
+  @Put(':id/move')
+  @UseGuards(AuthGuard)
+  async moveDocument(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { parentId: number | null },
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.moveDocument(id, body.parentId, userId);
   }
 }

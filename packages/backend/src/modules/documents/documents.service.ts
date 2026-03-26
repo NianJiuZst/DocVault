@@ -3,6 +3,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/update-document.dto';
 import { DocumentListResponse } from './interfaces/document-info.interface';
+import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -60,15 +61,20 @@ export class DocumentsService {
     const pageSize = dto.pageSize ?? 20;
     const skip = (page - 1) * pageSize;
 
+    const where: any = { userId };
+    if (dto.folderId !== undefined) {
+      where.parentId = dto.folderId;
+    }
+
     const [items, total] = await Promise.all([
       this.prisma.document.findMany({
-        where: { userId },
+        where,
         select: { id: true, title: true, createdAt: true, updatedAt: true },
         orderBy: { updatedAt: 'desc' },
         skip,
         take: pageSize,
       }),
-      this.prisma.document.count({ where: { userId } }),
+      this.prisma.document.count({ where }),
     ]);
 
     return {
@@ -206,5 +212,94 @@ export class DocumentsService {
       createdAt: s.document.createdAt.toISOString(),
       updatedAt: s.document.updatedAt.toISOString(),
     }));
+  }
+
+  // ──────────────────────────────────────────────
+  // Folder operations
+  // ──────────────────────────────────────────────
+
+  async createFolder(title: string, userId: number, parentId?: number) {
+    // Validate parent if provided
+    if (parentId !== undefined) {
+      const parent = await this.prisma.document.findUnique({ where: { id: parentId } });
+      if (!parent) throw new NotFoundException('Parent folder not found');
+      if (!parent.isFolder) throw new BadRequestException('Parent is not a folder');
+      if (parent.userId !== userId) throw new ForbiddenException('You do not own the parent folder');
+    }
+    return this.prisma.document.create({
+      data: {
+        title,
+        content: Prisma.DbNull,
+        isFolder: true,
+        userId,
+        parentId: parentId ?? null,
+      },
+    });
+  }
+
+  async getTree(userId: number) {
+    // Fetch all documents and folders owned by user (not shared ones for tree view)
+    const all = await this.prisma.document.findMany({
+      where: { userId },
+      select: {
+        id: true,
+        title: true,
+        isFolder: true,
+        parentId: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+      orderBy: { title: 'asc' },
+    });
+
+    // Build tree: only top-level items (parentId === null) + their children
+    const buildNode = (item: typeof all[number]): {
+      id: number;
+      title: string;
+      isFolder: boolean;
+      createdAt: string;
+      updatedAt: string;
+      children: any[];
+    } => {
+      const children = all
+        .filter((d) => d.parentId === item.id)
+        .map(buildNode);
+      return {
+        id: item.id,
+        title: item.title,
+        isFolder: item.isFolder,
+        createdAt: item.createdAt.toISOString(),
+        updatedAt: item.updatedAt.toISOString(),
+        children,
+      };
+    };
+
+    return all
+      .filter((d) => d.parentId === null)
+      .map(buildNode);
+  }
+
+  async moveDocument(id: number, parentId: number | null, userId: number) {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+
+    // Prevent moving a folder into itself or its descendants (simple check: same id)
+    if (parentId !== null && id === parentId) {
+      throw new BadRequestException('Cannot move a folder into itself');
+    }
+
+    // Validate parent if provided
+    if (parentId !== null) {
+      const parent = await this.prisma.document.findUnique({ where: { id: parentId } });
+      if (!parent) throw new NotFoundException('Target folder not found');
+      if (!parent.isFolder) throw new BadRequestException('Target is not a folder');
+      if (parent.userId !== userId) throw new ForbiddenException('You do not own the target folder');
+    }
+
+    return this.prisma.document.update({
+      where: { id },
+      data: { parentId: parentId ?? null },
+    });
   }
 }

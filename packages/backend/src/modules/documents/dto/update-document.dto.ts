@@ -26,4 +26,8 @@ export class ListDocumentDto {
   @IsOptional()
   @IsNumber()
   pageSize?: number;
+
+  @IsOptional()
+  @IsNumber()
+  folderId?: number; // undefined = all docs (no folder filter), null = root level only
 }

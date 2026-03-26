@@ -9,12 +9,12 @@ datasource db {
 
 model User {
   id           Int              @id @default(autoincrement())
-  githubUserId String          @unique // GitHub唯一ID（唯一索引）
+  githubUserId String          @unique
   name         String
   avatar       String
-  email        String?         // 可选字段
-  documents    Document[]      // 关联文档（一对多）
-  shares       DocumentShare[] // 被分享的文档
+  email        String?
+  documents    Document[]
+  shares       DocumentShare[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 }
@@ -22,13 +22,17 @@ model User {
 model Document {
   id           Int               @id @default(autoincrement())
   title        String
-  content      Json              // 富文本内容（对应PostgreSQL的JSONB）
+  content      Json?            // null for folders
   userId       Int
   user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
-  versions     DocumentVersion[] // 关联版本（一对多）
-  shares       DocumentShare[]   // 关联分享记录
-  isPublic     Boolean           @default(false)  // 是否公开
-  shareToken   String?           @unique // 分享令牌（随机字符串）
+  versions     DocumentVersion[]
+  shares       DocumentShare[]
+  isPublic     Boolean           @default(false)
+  shareToken   String?          @unique
+  isFolder     Boolean          @default(false)
+  parentId     Int?
+  parent       Document?         @relation("DocumentTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children     Document[]        @relation("DocumentTree")
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 }
@@ -37,8 +41,8 @@ model DocumentVersion {
   id        Int      @id @default(autoincrement())
   documentId Int
   document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
-  version   Int      // 版本号
-  content   Json     // 版本内容快照
+  version   Int
+  content   Json
   updatedAt DateTime @default(now())
 }
 
@@ -48,7 +52,7 @@ model DocumentShare {
   document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
   userId      Int
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  permission  String   // "viewer" | "editor"
+  permission  String
   createdAt   DateTime @default(now())
 
   @@unique([documentId, userId])
