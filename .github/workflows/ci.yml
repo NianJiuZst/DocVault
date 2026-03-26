@@ -26,6 +26,10 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Clear Jest cache
+        run: npx jest --clearCache
+        working-directory: packages/backend
+
       - name: Generate Prisma Client
         run: pnpm prisma generate
         working-directory: packages/backend
