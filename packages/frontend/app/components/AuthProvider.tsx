@@ -55,8 +55,17 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
   // 定义常量存储登录页路径（避免重复书写，确保依赖稳定）
   const LOGIN_PATH = "/home/login";
 
-  // 6. 登录状态检查与自动跳转（修复依赖数组问题）
+  // 6. 公开路由白名单（无需登录即可访问）
+  const PUBLIC_PATHS = ["/", "/home/login"];
+
+  // 7. 登录状态检查与自动跳转（修复依赖数组问题）
   useEffect(() => {
+    // 公开路由不做登录检查，直接跳过
+    if (PUBLIC_PATHS.includes(pathname)) {
+      setLoading(false);
+      return;
+    }
+
     const checkLogin = async () => {
       setError(null);
       try {

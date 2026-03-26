@@ -1,6 +1,73 @@
 "use client";
-import WaveArrow from "../components/WaveArrow";
+import { useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import styles from "./page.module.css";
+
+interface Particle {
+  x: number;
+  y: number;
+  size: number;
+  duration: number;
+  delay: number;
+  opacity: number;
+}
+
+function BackgroundParticles() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    let animId: number;
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const particles: Particle[] = Array.from({ length: 28 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      size: Math.random() * 2.5 + 0.5,
+      duration: Math.random() * 12 + 8,
+      delay: Math.random() * 8,
+      opacity: Math.random() * 0.4 + 0.1,
+    }));
+
+    const draw = (t: number) => {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const p of particles) {
+        const progress = ((t * 1000 - p.delay * 1000) % (p.duration * 1000)) / (p.duration * 1000);
+        const offsetY = Math.sin(progress * Math.PI * 2) * 18;
+        const offsetX = Math.cos(progress * Math.PI * 2) * 8;
+        ctx.beginPath();
+        ctx.arc(p.x + offsetX, p.y + offsetY, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(167, 139, 250, ${p.opacity})`;
+        ctx.fill();
+      }
+      animId = requestAnimationFrame(draw);
+    };
+
+    animId = requestAnimationFrame(draw);
+    return () => {
+      window.removeEventListener("resize", resize);
+      cancelAnimationFrame(animId);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className={styles.particles}
+      aria-hidden="true"
+    />
+  );
+}
 
 interface FeatureCard {
   icon: React.ReactNode;
@@ -11,7 +78,7 @@ interface FeatureCard {
 const features: FeatureCard[] = [
   {
     icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
         <path d="M2 17l10 5 10-5" />
         <path d="M2 12l10 5 10-5" />
@@ -22,7 +89,7 @@ const features: FeatureCard[] = [
   },
   {
     icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -34,7 +101,7 @@ const features: FeatureCard[] = [
   },
   {
     icon: (
-      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
       </svg>
@@ -45,40 +112,40 @@ const features: FeatureCard[] = [
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+
   return (
     <div className={styles.page}>
-      {/* 背景：纯黑 + 暗紫微光 */}
-      <div className={styles.bg} aria-hidden="true" />
+      <BackgroundParticles />
 
-      {/* 主内容 */}
       <main className={styles.main}>
-        {/* 标题区 */}
+        {/* Hero */}
         <section className={styles.hero}>
-          <h1 className={styles.title}>
-            <span className={styles.titleText}>DocVault</span>
-            <span className={styles.titleGlow} aria-hidden="true" />
-          </h1>
+          <h1 className={styles.title}>DocVault</h1>
           <p className={styles.subtitle}>现代化协同文档编辑器</p>
         </section>
 
-        {/* 三卡片 */}
+        {/* Cards */}
         <section className={styles.features} aria-label="功能特性">
-          {features.map((feature, index) => (
-            <article
-              key={feature.title}
-              className={styles.card}
-              style={{ animationDelay: `${index * 120}ms` }}
-            >
-              <div className={styles.cardIcon}>{feature.icon}</div>
-              <h2 className={styles.cardTitle}>{feature.title}</h2>
-              <p className={styles.cardDesc}>{feature.description}</p>
+          {features.map((f, i) => (
+            <article key={f.title} className={styles.card} style={{ animationDelay: `${i * 130}ms` }}>
+              <div className={styles.cardIcon}>{f.icon}</div>
+              <h2 className={styles.cardTitle}>{f.title}</h2>
+              <p className={styles.cardDesc}>{f.description}</p>
             </article>
           ))}
         </section>
 
-        {/* 波纹箭头 */}
-        <section className={styles.cta} aria-label="开始使用">
-          <WaveArrow />
+        {/* CTA */}
+        <section className={styles.cta}>
+          <button
+            className={styles.ctaButton}
+            onClick={() => router.push("/home/cloud-docs")}
+            aria-label="开始使用"
+          >
+            <span>开始使用</span>
+            <span className={styles.ctaArrow}>→</span>
+          </button>
         </section>
       </main>
     </div>
