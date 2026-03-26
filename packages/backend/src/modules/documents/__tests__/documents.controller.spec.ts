@@ -20,6 +20,9 @@ const mockDocumentsService = {
   getShares: jest.fn(),
   search: jest.fn(),
   findSharedWithUser: jest.fn(),
+  getTree: jest.fn(),
+  createFolder: jest.fn(),
+  moveDocument: jest.fn(),
 };
 
 const mockJwtService = {
@@ -186,6 +189,63 @@ describe('DocumentsController', () => {
 
       await controller.search('', mockReq as Request);
       expect(mockDocumentsService.search).toHaveBeenCalledWith('', 1);
+    });
+  });
+
+  describe('getTree', () => {
+    it('should return folder tree for current user', async () => {
+      const tree = [
+        { id: 1, title: 'Folder A', isFolder: true, children: [] },
+        { id: 2, title: 'Doc', isFolder: false, children: [] },
+      ];
+      mockDocumentsService.getTree.mockResolvedValue(tree);
+
+      const result = await controller.getTree(mockReq as Request);
+      expect(result).toEqual(tree);
+      expect(mockDocumentsService.getTree).toHaveBeenCalledWith(1);
+    });
+
+    it('should return empty array when no documents', async () => {
+      mockDocumentsService.getTree.mockResolvedValue([]);
+
+      const result = await controller.getTree(mockReq as Request);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('createFolder', () => {
+    it('should create a folder at root level', async () => {
+      const created = { id: 1, title: 'My Folder', isFolder: true };
+      mockDocumentsService.createFolder.mockResolvedValue(created);
+
+      await controller.createFolder({ title: 'My Folder' }, mockReq as Request);
+      expect(mockDocumentsService.createFolder).toHaveBeenCalledWith('My Folder', 1, undefined);
+    });
+
+    it('should create a folder inside a parent folder', async () => {
+      const created = { id: 2, title: 'Sub Folder', isFolder: true, parentId: 1 };
+      mockDocumentsService.createFolder.mockResolvedValue(created);
+
+      await controller.createFolder({ title: 'Sub Folder', parentId: 1 }, mockReq as Request);
+      expect(mockDocumentsService.createFolder).toHaveBeenCalledWith('Sub Folder', 1, 1);
+    });
+  });
+
+  describe('moveDocument', () => {
+    it('should move document to a target folder', async () => {
+      const moved = { id: 2, parentId: 5 };
+      mockDocumentsService.moveDocument.mockResolvedValue(moved);
+
+      await controller.moveDocument(2, { parentId: 5 }, mockReq as Request);
+      expect(mockDocumentsService.moveDocument).toHaveBeenCalledWith(2, 5, 1);
+    });
+
+    it('should move document to root (parentId = null)', async () => {
+      const moved = { id: 2, parentId: null };
+      mockDocumentsService.moveDocument.mockResolvedValue(moved);
+
+      await controller.moveDocument(2, { parentId: null }, mockReq as Request);
+      expect(mockDocumentsService.moveDocument).toHaveBeenCalledWith(2, null, 1);
     });
   });
 });
