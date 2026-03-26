@@ -1,149 +1,86 @@
 "use client";
-import type React from "react";
+import WaveArrow from "../components/WaveArrow";
 import styles from "./page.module.css";
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { debounce } from "es-toolkit";
 
-const SplashScreen: React.FC = () => {
-	const router = useRouter();
+interface FeatureCard {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+}
 
-	useEffect(() => {
-		console.log("[SplashScreen] useEffect mounted");
+const features: FeatureCard[] = [
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 2L2 7l10 5 10-5-10-5z" />
+        <path d="M2 17l10 5 10-5" />
+        <path d="M2 12l10 5 10-5" />
+      </svg>
+    ),
+    title: "AI 知识协同",
+    description: "AI 自动解析文档核心内容、生成检索标签，完成创作 — 沉淀 — 复用闭环。",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+    title: "实时协作编辑",
+    description: "基于 Yjs CRDT 算法实现毫秒级内容同步，网络波动下仍保持流畅协作体验。",
+  },
+  {
+    icon: (
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+      </svg>
+    ),
+    title: "知识库联动",
+    description: "编辑中实时关联 RAG 知识库，AI 自动推荐相关知识片段，无缝衔接创作与沉淀。",
+  },
+];
 
-		if (process.env.NODE_ENV === "development") {
-			localStorage.removeItem("hasScrolledToBottom");
-		}
+export default function HomePage() {
+  return (
+    <div className={styles.page}>
+      {/* 背景：纯黑 + 暗紫微光 */}
+      <div className={styles.bg} aria-hidden="true" />
 
-		const calculateScrollPosition = () => {
-			const scrollPosition = window.scrollY + window.innerHeight;
-			const documentHeight = document.documentElement.scrollHeight;
-			const percentage = (scrollPosition / documentHeight) * 100;
+      {/* 主内容 */}
+      <main className={styles.main}>
+        {/* 标题区 */}
+        <section className={styles.hero}>
+          <h1 className={styles.title}>
+            <span className={styles.titleText}>DocVault</span>
+            <span className={styles.titleGlow} aria-hidden="true" />
+          </h1>
+          <p className={styles.subtitle}>现代化协同文档编辑器</p>
+        </section>
 
-			return {
-				scrollPosition,
-				documentHeight,
-				percentage,
-			};
-		};
+        {/* 三卡片 */}
+        <section className={styles.features} aria-label="功能特性">
+          {features.map((feature, index) => (
+            <article
+              key={feature.title}
+              className={styles.card}
+              style={{ animationDelay: `${index * 120}ms` }}
+            >
+              <div className={styles.cardIcon}>{feature.icon}</div>
+              <h2 className={styles.cardTitle}>{feature.title}</h2>
+              <p className={styles.cardDesc}>{feature.description}</p>
+            </article>
+          ))}
+        </section>
 
-		const handleScroll = debounce(() => {
-			const { percentage } = calculateScrollPosition();
-			if (percentage >= 90 && !localStorage.getItem("hasScrolledToBottom")) {
-				console.log("[Scroll] Bottom reached! Redirecting to /home/cloud-docs");
-				localStorage.setItem("hasScrolledToBottom", "true");
-				router.push("/home/cloud-docs");
-			}
-		}, 100);
-
-		handleScroll();
-		window.addEventListener("scroll", handleScroll);
-
-		return () => {
-			window.removeEventListener("scroll", handleScroll);
-		};
-	}, [router]);
-
-	const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-		const card = e.currentTarget;
-		const rect = card.getBoundingClientRect();
-		const x = ((e.clientX - rect.left) / rect.width) * 100;
-		const y = ((e.clientY - rect.top) / rect.height) * 100;
-
-		const rotationFactor = parseFloat(card.dataset.rotationFactor || "2");
-		const rotateX = (y - 50) / rotationFactor;
-		const rotateY = ((x - 50) / rotationFactor) * -1;
-
-		card.style.setProperty("--x", `${x}%`);
-		card.style.setProperty("--y", `${y}%`);
-		card.style.transform = `rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
-	};
-
-	const handleCardMouseLeave = (e: React.MouseEvent<HTMLDivElement>) => {
-		const card = e.currentTarget;
-		card.style.transform = "rotateX(0) rotateY(0)";
-	};
-
-	return (
-		<div className="p-6">
-			<div className={styles.background}></div>
-
-			<main className={styles.main}>
-				<h1 className={styles.title}>DocVault</h1>
-
-				<p className={styles.subtitle}>
-					Tiptap+Next.js 15 打造现代化协同文档编辑器，内置 AI Agent 与 RAG
-					知识库关联功能
-				</p>
-
-				<div className={styles["cards-container"]}>
-					<div
-						className={styles.card}
-						data-rotation-factor="2"
-						onMouseMove={handleCardMouseMove}
-						onMouseLeave={handleCardMouseLeave}
-					>
-						<div className={styles["card-content"]}>
-							<div>
-								<p className={styles["card-title"]}>AI智能知识协同</p>
-								<p className={styles["card-text"]}>
-									通过AI 实现快速解析文档内容逻辑、提取核心重点，AI Agent
-									自动完成文档核心内容归档、生成检索标签，推动 “创作 - 沉淀 -
-									复用” 知识闭环落地。
-								</p>
-							</div>
-						</div>
-					</div>
-					<div
-						className={styles.card}
-						data-rotation-factor="2"
-						onMouseMove={handleCardMouseMove}
-						onMouseLeave={handleCardMouseLeave}
-					>
-						<div className={styles["card-content"]}>
-							<div>
-								<p className={styles["card-title"]}>多人实时协同编辑</p>
-								<p className={styles["card-text"]}>
-									基于Yjs的CRDT算法实现毫秒级内容同步，多人编辑时自动消解冲突，网络波动下仍保持流畅协作体验
-								</p>
-							</div>
-						</div>
-					</div>
-					<div
-						className={styles.card}
-						data-rotation-factor="2"
-						onMouseMove={handleCardMouseMove}
-						onMouseLeave={handleCardMouseLeave}
-					>
-						<div className={styles["card-content"]}>
-							<div>
-								<p className={styles["card-title"]}>知识库智能联动</p>
-								<p className={styles["card-text"]}>
-									文档编辑中实时关联RAG知识库，AI自动推荐相关知识片段，实现内容创作与知识沉淀的无缝闭环
-								</p>
-							</div>
-						</div>
-					</div>
-				</div>
-				<p className={styles["scroll-prompt"]}>上滑开启 AI 协同编辑</p>
-				<div className={styles.container}>
-					<div className={`${styles.chevron} ${styles["delay-1"]}`}>
-						<span className={styles.before}></span>
-						<span className={styles.after}></span>
-					</div>
-					<div className={`${styles.chevron} ${styles["delay-2"]}`}>
-						<span className={styles.before}></span>
-						<span className={styles.after}></span>
-					</div>
-					<div className={styles.chevron}>
-						<span className={styles.before}></span>
-						<span className={styles.after}></span>
-					</div>
-				</div>
-			</main>
-			<div className={styles["height-spacer"]}></div>
-		</div>
-	);
-};
-
-export default SplashScreen;
+        {/* 波纹箭头 */}
+        <section className={styles.cta} aria-label="开始使用">
+          <WaveArrow />
+        </section>
+      </main>
+    </div>
+  );
+}

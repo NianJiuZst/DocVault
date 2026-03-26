@@ -63,7 +63,6 @@ function buildExtensions(yDoc: Y.Doc) {
 						"margin-top: 1.8em; margin-bottom: 0.8em; font-weight: bold; color: #222222;",
 				},
 			},
-			history: false,
 		}),
 		TextStyleKit,
 		SuggestionMenu,
@@ -328,7 +327,7 @@ export default function DocEditor() {
 					onConnect: () => console.log("Collab connected"),
 					onDisconnect: () => console.log("Collab disconnected"),
 					onAwarenessChange: ({ states }) => {
-						setCollaborators(states.size);
+						setCollaborators(states.length);
 					},
 				});
 				providerRef.current = provider;
@@ -383,7 +382,7 @@ export default function DocEditor() {
 	return (
 		<div className="w-full h-[calc(100vh-2rem)] p-4 bg-white flex flex-col">
 			<div className="flex items-center justify-between mb-2">
-				<MenuBar editor={editor} />
+				{editor && <MenuBar editor={editor} />}
 				<div className="flex items-center gap-4">
 					{collabLabel && (
 						<span className="text-sm text-blue-500">{collabLabel}</span>
