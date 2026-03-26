@@ -55,6 +55,16 @@ describe('AuthService', () => {
       const result = await service.getGitHubAccessToken('bad_code');
       expect(result.error).toBe('incorrect_client_credentials');
     });
+
+    it('should throw when access_token is missing with no error message', async () => {
+      mockHttpService.post.mockReturnValue(
+        of({ data: {} }), // no error field, no access_token
+      );
+
+      await expect(service.handleGitHubCallback('bad_code')).rejects.toThrow(
+        'GitHub 令牌获取失败: undefined',
+      );
+    });
   });
 
   describe('getGitHubUserInfo', () => {

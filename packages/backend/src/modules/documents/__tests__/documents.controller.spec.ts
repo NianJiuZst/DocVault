@@ -136,6 +136,15 @@ describe('DocumentsController', () => {
     });
   });
 
+  describe('revokeShare', () => {
+    it('should revoke share for a document', async () => {
+      mockDocumentsService.revokeShare.mockResolvedValue({ success: true });
+
+      const result = await controller.revokeShare(1, 2, mockReq as Request);
+      expect(mockDocumentsService.revokeShare).toHaveBeenCalledWith(1, 2, 1);
+    });
+  });
+
   describe('findByShareToken', () => {
     it('should find document by share token', async () => {
       const mockDoc = { id: 1, title: 'Shared', content: {} };

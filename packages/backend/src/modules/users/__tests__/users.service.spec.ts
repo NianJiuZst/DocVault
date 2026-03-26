@@ -62,6 +62,17 @@ describe('UsersService', () => {
 
       expect(mockPrisma.user.upsert).toHaveBeenCalled();
     });
+
+    it('should default missing name and avatar to empty string in upsert', async () => {
+      mockPrisma.user.upsert.mockResolvedValue({ id: 1, githubUserId: '456' });
+      const partialDto = { githubUserId: '456' } as any;
+      await service.findOrCreate(partialDto);
+      expect(mockPrisma.user.upsert).toHaveBeenCalledWith({
+        where: { githubUserId: '456' },
+        update: { name: '', avatar: '' },
+        create: { githubUserId: '456', name: '', avatar: '' },
+      });
+    });
   });
 
   describe('find', () => {

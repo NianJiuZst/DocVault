@@ -36,6 +36,24 @@ describe('SearchBar', () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it('should clear results and hide dropdown when query is empty string', async () => {
+    // Pre-populate with a result from previous search
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: async () => [{ id: 1, title: 'Doc A', createdAt: '2024-01-01', updatedAt: '2024-01-01' }],
+    });
+    render(<SearchBar />);
+    const input = screen.getByPlaceholderText('🔍 搜索文档...') as HTMLInputElement;
+    await userEvent.type(input, 'x');
+    // Wait for results to appear
+    await waitFor(() => expect(screen.getByText('Doc A')).toBeInTheDocument());
+    // Now clear — triggers the empty-string branch
+    await userEvent.clear(input);
+    await waitFor(() => {
+      expect(screen.queryByText('Doc A')).not.toBeInTheDocument();
+    });
+  });
+
   it('should call fetch API with encoded query param', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     render(<SearchBar />);

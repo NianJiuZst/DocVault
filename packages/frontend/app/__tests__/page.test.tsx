@@ -3,6 +3,11 @@ import userEvent from "@testing-library/user-event";
 import { describe, it, expect, vi } from "vitest";
 import HomePage from "../page";
 
+// Mock BackgroundParticles to avoid canvas/getContext not supported in jsdom
+vi.mock("../../components/BackgroundParticles", () => ({
+  default: vi.fn(() => null),
+}));
+
 const mockPush = vi.fn();
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -36,5 +41,12 @@ describe("HomePage", () => {
     render(<HomePage />);
     await user.click(screen.getByRole("button"));
     expect(mockPush).toHaveBeenCalledWith("/home/cloud-docs");
+  });
+
+  it("should render feature card descriptions", () => {
+    render(<HomePage />);
+    expect(screen.getByText(/创作 — 沉淀 — 复用/)).toBeInTheDocument();
+    expect(screen.getByText(/Yjs CRDT/)).toBeInTheDocument();
+    expect(screen.getByText(/RAG/)).toBeInTheDocument();
   });
 });
