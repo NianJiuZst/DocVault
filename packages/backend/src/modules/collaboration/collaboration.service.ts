@@ -28,6 +28,6 @@ export class CollaborationService implements OnModuleInit, OnModuleDestroy {
   }
 
   onModuleDestroy() {
-    this.server.destroy();
+    this.server?.destroy();
   }
 }

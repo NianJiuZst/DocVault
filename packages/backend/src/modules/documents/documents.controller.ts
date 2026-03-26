@@ -80,7 +80,7 @@ export class DocumentsController {
     @Req() req: Request,
   ) {
     const userId = (req as any)._user.userId;
-    return this.documentsService.share(id, userId, body.permission);
+    return this.documentsService.share(id, body.userId, body.permission, userId);
   }
 
   @Delete(':id/share/:targetUserId')

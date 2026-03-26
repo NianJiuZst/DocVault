@@ -118,11 +118,12 @@ describe('DocumentsController', () => {
   });
 
   describe('share', () => {
-    it('should share a document', async () => {
+    it('should share a document with the target user', async () => {
       mockDocumentsService.share.mockResolvedValue({ id: 1 });
 
       await controller.share(1, { userId: 2, permission: 'viewer' }, mockReq as Request);
-      expect(mockDocumentsService.share).toHaveBeenCalledWith(1, 1, 'viewer');
+      // share(documentId, targetUserId, permission, ownerId)
+      expect(mockDocumentsService.share).toHaveBeenCalledWith(1, 2, 'viewer', 1);
     });
   });
 

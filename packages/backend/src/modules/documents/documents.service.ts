@@ -122,15 +122,15 @@ export class DocumentsService {
     });
   }
 
-  async share(documentId: number, userId: number, permission: 'viewer' | 'editor') {
+  async share(documentId: number, targetUserId: number, permission: 'viewer' | 'editor', ownerId: number) {
     const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
     if (!doc) throw new NotFoundException('Document not found');
-    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+    if (doc.userId !== ownerId) throw new ForbiddenException('You do not own this document');
 
     const share = await this.prisma.documentShare.upsert({
-      where: { documentId_userId: { documentId, userId } },
+      where: { documentId_userId: { documentId, userId: targetUserId } },
       update: { permission },
-      create: { documentId, userId, permission },
+      create: { documentId, userId: targetUserId, permission },
     });
     return share;
   }
