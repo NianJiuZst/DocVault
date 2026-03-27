@@ -3,6 +3,9 @@ import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { Response } from 'express';
 
+const originalFrontendUrl = process.env.FRONTEND_URL;
+process.env.FRONTEND_URL ??= 'http://localhost:3000';
+
 const mockAuthService = {
   handleGitHubCallback: jest.fn(),
 };
@@ -23,6 +26,14 @@ describe('AuthController', () => {
 
   afterEach(() => {
     consoleErrorSpy.mockRestore();
+  });
+
+  afterAll(() => {
+    if (originalFrontendUrl === undefined) {
+      delete process.env.FRONTEND_URL;
+    } else {
+      process.env.FRONTEND_URL = originalFrontendUrl;
+    }
   });
 
   // ──────────────────────────────────────────────
