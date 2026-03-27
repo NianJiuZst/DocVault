@@ -10,8 +10,9 @@ import {
   UseGuards,
   ParseIntPipe,
   Req,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/update-document.dto';
@@ -156,5 +157,48 @@ export class DocumentsController {
   ) {
     const userId = (req as any)._user.userId;
     return this.documentsService.moveDocument(id, body.parentId, userId);
+  }
+
+  // ── Export / Import ──────────────────────────────────────────
+
+  @Get(':id/export/markdown')
+  @UseGuards(AuthGuard)
+  async exportMarkdown(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.exportAsMarkdown(id, userId);
+  }
+
+  @Post('import/markdown')
+  @UseGuards(AuthGuard)
+  async importMarkdown(
+    @Body() body: { title: string; content: string; parentId?: number },
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.importFromMarkdown(body.title, body.content, userId, body.parentId);
+  }
+
+  @Get(':id/export/pdf')
+  @UseGuards(AuthGuard)
+  async exportPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const userId = (req as any)._user.userId;
+    const pdfBuffer = await this.documentsService.exportAsPdf(id, userId);
+
+    // Get document title for filename
+    const doc = await this.documentsService.find(id);
+    const filename = doc
+      ? `${doc.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}.pdf`
+      : 'document.pdf';
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 }

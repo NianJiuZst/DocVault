@@ -5,6 +5,8 @@ import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/upd
 import { DocumentListResponse } from './interfaces/document-info.interface';
 import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
+import { tiptapToMarkdown, markdownToTiptap } from './utils/tiptap-to-markdown.util';
+import { tiptapToPdf } from './utils/tiptap-to-pdf.util';
 
 @Injectable()
 export class DocumentsService {
@@ -301,5 +303,95 @@ export class DocumentsService {
       where: { id },
       data: { parentId: parentId ?? null },
     });
+  }
+
+  // ──────────────────────────────────────────────
+  // Export / Import
+  // ──────────────────────────────────────────────
+
+  /**
+   * Export a document as Markdown.
+   * Returns the document metadata and content in Markdown format.
+   */
+  async exportAsMarkdown(id: number, userId: number): Promise<{
+    id: number;
+    title: string;
+    content: string; // Markdown string
+  }> {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.isFolder) throw new BadRequestException('Cannot export a folder as Markdown');
+    // Only owner or shared users can export
+    if (doc.userId !== userId) {
+      // Check if user has share access
+      const share = await this.prisma.documentShare.findUnique({
+        where: { documentId_userId: { documentId: id, userId } },
+      });
+      if (!share) throw new ForbiddenException('You do not have access to this document');
+    }
+
+    const markdown = doc.content ? tiptapToMarkdown(doc.content) : '';
+    return {
+      id: doc.id,
+      title: doc.title,
+      content: markdown,
+    };
+  }
+
+  /**
+   * Import a Markdown document.
+   * Converts Markdown content to Tiptap JSON and creates a new document.
+   */
+  async importFromMarkdown(
+    title: string,
+    markdown: string,
+    userId: number,
+    parentId?: number,
+  ): Promise<{ id: number; title: string }> {
+    // Validate parent if provided
+    if (parentId !== undefined) {
+      const parent = await this.prisma.document.findUnique({ where: { id: parentId } });
+      if (!parent) throw new NotFoundException('Parent folder not found');
+      if (!parent.isFolder) throw new BadRequestException('Target is not a folder');
+      if (parent.userId !== userId) throw new ForbiddenException('You do not own the target folder');
+    }
+
+    const tiptapContent = markdownToTiptap(markdown);
+
+    const created = await this.prisma.document.create({
+      data: {
+        title,
+        content: tiptapContent as unknown as Prisma.InputJsonValue,
+        userId,
+        parentId: parentId ?? null,
+        isFolder: false,
+      },
+    });
+
+    return { id: created.id, title: created.title };
+  }
+
+  /**
+   * Export a document as PDF.
+   * Returns the PDF as a Buffer.
+   */
+  async exportAsPdf(id: number, userId: number): Promise<Buffer> {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) throw new NotFoundException('Document not found');
+    if (doc.isFolder) throw new BadRequestException('Cannot export a folder as PDF');
+    // Only owner or shared users can export
+    if (doc.userId !== userId) {
+      // Check if user has share access
+      const share = await this.prisma.documentShare.findUnique({
+        where: { documentId_userId: { documentId: id, userId } },
+      });
+      if (!share) throw new ForbiddenException('You do not have access to this document');
+    }
+
+    const pdfBuffer = await tiptapToPdf(doc.content, {
+      title: doc.title,
+    });
+
+    return pdfBuffer;
   }
 }
