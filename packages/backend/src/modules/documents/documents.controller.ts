@@ -52,16 +52,11 @@ export class DocumentsController {
     return this.documentsService.findAllByUser(dto, userId);
   }
 
-  @Get(':id')
-  @UseGuards(AuthGuard)
-  async find(@Param('id', ParseIntPipe) id: number) {
-    return this.documentsService.find(id);
-  }
-
   @Get(':id/versions')
   @UseGuards(AuthGuard)
-  async getVersions(@Param('id', ParseIntPipe) id: number) {
-    return this.documentsService.getVersions(id);
+  async getVersions(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.getVersions(id, userId);
   }
 
   @Post(':id/rollback')
@@ -139,6 +134,13 @@ export class DocumentsController {
     return this.documentsService.getTree(userId);
   }
 
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  async find(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.find(id, userId);
+  }
+
   @Post('folder')
   @UseGuards(AuthGuard)
   async createFolder(
@@ -190,7 +192,7 @@ export class DocumentsController {
     const pdfBuffer = await this.documentsService.exportAsPdf(id, userId);
 
     // Get document title for filename
-    const doc = await this.documentsService.find(id);
+    const doc = await this.documentsService.find(id, userId);
     const filename = doc
       ? `${doc.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}.pdf`
       : 'document.pdf';

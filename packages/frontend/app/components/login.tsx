@@ -15,6 +15,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   Default: "登录失败，请重试",
   OAuthSignin: "无法连接到 GitHub，请检查网络",
   OAuthCallback: "GitHub 回调失败，请重试",
+  OAuthStateMismatch: "登录状态校验失败，请重新发起 GitHub 登录",
   OAuthCreateAccount: "创建账户时出错",
   EmailCreateAccount: "创建邮箱账户时出错",
   CallbackRouteError: "回调路由错误",

@@ -50,18 +50,35 @@ describe('DocumentsService', () => {
   // find
   // ──────────────────────────────────────────────
   describe('find', () => {
-    it('should return a document by id', async () => {
+    it('should return a document by id for owner', async () => {
       const mockDoc = { id: 1, title: 'Test', content: {}, userId: 1 };
       mockPrisma.document.findUnique.mockResolvedValue(mockDoc);
-      const result = await service.find(1);
+      const result = await service.find(1, 1);
       expect(result).toEqual(mockDoc);
       expect(mockPrisma.document.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(mockPrisma.documentShare.findUnique).not.toHaveBeenCalled();
     });
 
-    it('should return null when document not found', async () => {
+    it('should return a document for shared user', async () => {
+      const mockDoc = { id: 1, title: 'Shared', content: {}, userId: 99 };
+      mockPrisma.document.findUnique.mockResolvedValue(mockDoc);
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'viewer' });
+      const result = await service.find(1, 1);
+      expect(result).toEqual(mockDoc);
+      expect(mockPrisma.documentShare.findUnique).toHaveBeenCalledWith({
+        where: { documentId_userId: { documentId: 1, userId: 1 } },
+      });
+    });
+
+    it('should throw NotFoundException when document not found', async () => {
       mockPrisma.document.findUnique.mockResolvedValue(null);
-      const result = await service.find(999);
-      expect(result).toBeNull();
+      await expect(service.find(999, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user has no access to document', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      mockPrisma.documentShare.findUnique.mockResolvedValue(null);
+      await expect(service.find(1, 1)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -111,8 +128,20 @@ describe('DocumentsService', () => {
       await expect(service.update({ id: 999 }, 1)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when user does not own document', async () => {
+    it('should update document when user has shared editor access', async () => {
+      const existing = { id: 1, title: 'Old', content: {}, userId: 99 };
+      mockPrisma.document.findUnique.mockResolvedValue(existing);
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'editor' });
+      mockPrisma.documentVersion.findFirst.mockResolvedValue(null);
+      mockPrisma.documentVersion.create.mockResolvedValue({ id: 1 });
+      mockPrisma.document.update.mockResolvedValue({ id: 1, title: 'Updated' });
+      const result = await service.update({ id: 1, title: 'Updated' }, 1);
+      expect(result.title).toBe('Updated');
+    });
+
+    it('should throw ForbiddenException when user does not have edit access', async () => {
       mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'viewer' });
       await expect(service.update({ id: 1 }, 1)).rejects.toThrow(ForbiddenException);
     });
 
@@ -227,12 +256,13 @@ describe('DocumentsService', () => {
   // ──────────────────────────────────────────────
   describe('getVersions', () => {
     it('should return version list sorted desc', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 1 });
       const versions = [
         { id: 2, version: 2, updatedAt: new Date() },
         { id: 1, version: 1, updatedAt: new Date() },
       ];
       mockPrisma.documentVersion.findMany.mockResolvedValue(versions);
-      const result = await service.getVersions(1);
+      const result = await service.getVersions(1, 1);
       expect(result).toHaveLength(2);
       expect(mockPrisma.documentVersion.findMany).toHaveBeenCalledWith({
         where: { documentId: 1 },
@@ -264,6 +294,7 @@ describe('DocumentsService', () => {
 
     it('should throw ForbiddenException when user does not own document', async () => {
       mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      mockPrisma.documentShare.findUnique.mockResolvedValue(null);
       await expect(service.rollback(1, 5, 1)).rejects.toThrow(ForbiddenException);
     });
 

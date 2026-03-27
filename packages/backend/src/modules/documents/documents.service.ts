@@ -12,8 +12,41 @@ import { tiptapToPdf } from './utils/tiptap-to-pdf.util';
 export class DocumentsService {
   constructor(private prisma: PrismaService) {}
 
-  async find(id: number) {
-    return this.prisma.document.findUnique({ where: { id } });
+  private async getDocumentOrThrow(id: number) {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) {
+      throw new NotFoundException('Document not found');
+    }
+    return doc;
+  }
+
+  private async getAccessibleDocument(
+    id: number,
+    userId: number,
+    requiredPermission: 'viewer' | 'editor' = 'viewer',
+  ) {
+    const doc = await this.getDocumentOrThrow(id);
+    if (doc.userId === userId) {
+      return doc;
+    }
+
+    const share = await this.prisma.documentShare.findUnique({
+      where: { documentId_userId: { documentId: id, userId } },
+    });
+
+    if (!share) {
+      throw new ForbiddenException('You do not have access to this document');
+    }
+
+    if (requiredPermission === 'editor' && share.permission !== 'editor') {
+      throw new ForbiddenException('You do not have edit access to this document');
+    }
+
+    return doc;
+  }
+
+  async find(id: number, userId: number) {
+    return this.getAccessibleDocument(id, userId);
   }
 
   async create(dto: CreateDocumentDto, userId: number) {
@@ -27,13 +60,7 @@ export class DocumentsService {
   }
 
   async update(dto: UpdateDocumentDto, userId: number) {
-    const doc = await this.prisma.document.findUnique({ where: { id: dto.id } });
-    if (!doc) {
-      throw new NotFoundException('Document not found');
-    }
-    if (doc.userId !== userId) {
-      throw new ForbiddenException('You do not own this document');
-    }
+    const doc = await this.getAccessibleDocument(dto.id, userId, 'editor');
 
     // Create version snapshot before updating
     await this.createVersion(doc);
@@ -107,7 +134,8 @@ export class DocumentsService {
     });
   }
 
-  async getVersions(documentId: number) {
+  async getVersions(documentId: number, userId: number) {
+    await this.getAccessibleDocument(documentId, userId);
     return this.prisma.documentVersion.findMany({
       where: { documentId },
       orderBy: { version: 'desc' },
@@ -116,9 +144,7 @@ export class DocumentsService {
   }
 
   async rollback(documentId: number, versionId: number, userId: number) {
-    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
-    if (!doc) throw new NotFoundException('Document not found');
-    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+    const doc = await this.getAccessibleDocument(documentId, userId, 'editor');
 
     const version = await this.prisma.documentVersion.findUnique({ where: { id: versionId } });
     if (!version) throw new NotFoundException('Version not found');
@@ -318,17 +344,8 @@ export class DocumentsService {
     title: string;
     content: string; // Markdown string
   }> {
-    const doc = await this.prisma.document.findUnique({ where: { id } });
-    if (!doc) throw new NotFoundException('Document not found');
+    const doc = await this.getAccessibleDocument(id, userId);
     if (doc.isFolder) throw new BadRequestException('Cannot export a folder as Markdown');
-    // Only owner or shared users can export
-    if (doc.userId !== userId) {
-      // Check if user has share access
-      const share = await this.prisma.documentShare.findUnique({
-        where: { documentId_userId: { documentId: id, userId } },
-      });
-      if (!share) throw new ForbiddenException('You do not have access to this document');
-    }
 
     const markdown = doc.content ? tiptapToMarkdown(doc.content) : '';
     return {
@@ -376,17 +393,8 @@ export class DocumentsService {
    * Returns the PDF as a Buffer.
    */
   async exportAsPdf(id: number, userId: number): Promise<Buffer> {
-    const doc = await this.prisma.document.findUnique({ where: { id } });
-    if (!doc) throw new NotFoundException('Document not found');
+    const doc = await this.getAccessibleDocument(id, userId);
     if (doc.isFolder) throw new BadRequestException('Cannot export a folder as PDF');
-    // Only owner or shared users can export
-    if (doc.userId !== userId) {
-      // Check if user has share access
-      const share = await this.prisma.documentShare.findUnique({
-        where: { documentId_userId: { documentId: id, userId } },
-      });
-      if (!share) throw new ForbiddenException('You do not have access to this document');
-    }
 
     const pdfBuffer = await tiptapToPdf(doc.content, {
       title: doc.title,

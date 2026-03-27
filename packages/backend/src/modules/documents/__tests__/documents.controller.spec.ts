@@ -59,9 +59,9 @@ describe('DocumentsController', () => {
       const mockDoc = { id: 1, title: 'Test', content: {}, userId: 1 };
       mockDocumentsService.find.mockResolvedValue(mockDoc);
 
-      const result = await controller.find(1);
+      const result = await controller.find(1, mockReq as Request);
       expect(result!.id).toBe(1);
-      expect(mockDocumentsService.find).toHaveBeenCalledWith(1);
+      expect(mockDocumentsService.find).toHaveBeenCalledWith(1, 1);
     });
   });
 
@@ -109,8 +109,9 @@ describe('DocumentsController', () => {
     it('should return document versions', async () => {
       mockDocumentsService.getVersions.mockResolvedValue([{ id: 1, version: 1 }]);
 
-      const result = await controller.getVersions(1);
+      const result = await controller.getVersions(1, mockReq as Request);
       expect(result).toHaveLength(1);
+      expect(mockDocumentsService.getVersions).toHaveBeenCalledWith(1, 1);
     });
   });
 
@@ -290,6 +291,7 @@ describe('DocumentsController', () => {
       await controller.exportPdf(1, mockReq as Request, mockRes);
 
       expect(mockDocumentsService.exportAsPdf).toHaveBeenCalledWith(1, 1);
+      expect(mockDocumentsService.find).toHaveBeenCalledWith(1, 1);
       expect(mockRes.set).toHaveBeenCalledWith({
         'Content-Type': 'application/pdf',
         'Content-Disposition': 'attachment; filename="Test_Doc.pdf"',

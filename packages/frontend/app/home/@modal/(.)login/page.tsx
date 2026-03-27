@@ -5,6 +5,18 @@ import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { usePathname } from "next/navigation";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+const setClientCookie = (
+  name: string,
+  value: string,
+  maxAgeSeconds: number
+) => {
+  document.cookie = `${name}=${value}; max-age=${maxAgeSeconds}; path=/; sameSite=lax; ${
+    process.env.NODE_ENV === "production" ? "secure;" : ""
+  }`;
+};
+
 export default function Page() {
   const router = useRouter();
   const pathname = usePathname();
@@ -35,19 +47,16 @@ export default function Page() {
   const handleSignIn = () => {
     const clientId =
       process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liLnXI5JngJR7Ykx";
-    const redirectUri =
-      process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
-      "http://localhost:3001/api/auth/github/callback";
+    const redirectUri = `${BACKEND_URL}/auth/github/callback`;
     const state = Math.random().toString(36).substring(2);
-    localStorage.setItem("oauth_state", state);
+    setClientCookie("github_oauth_state", state, 600);
 
     const githubAuthUrl =
       `https://github.com/login/oauth/authorize?` +
-      `client_id=${clientId}&` +
+      `client_id=${encodeURIComponent(clientId)}&` +
       `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `scope=user&` +
-      `state=${state}&` +
-      `callbackUrl=${encodeURIComponent(callbackUrl)}`; // 携带回调地址
+      `state=${encodeURIComponent(state)}`;
 
     window.location.href = githubAuthUrl;
   };
