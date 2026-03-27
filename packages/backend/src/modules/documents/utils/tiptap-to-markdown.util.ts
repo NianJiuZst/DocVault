@@ -182,15 +182,78 @@ export function markdownToTiptap(markdown: string): TiptapNode {
     if (paragraphLines.length > 0) {
       const paragraphText = paragraphLines.join(" ").trim();
       if (paragraphText) {
+        const inlineNodes = parseInlineFormatting(paragraphText);
         content.push({
           type: "paragraph",
-          content: [textNode(paragraphText)],
+          content: inlineNodes,
         });
       }
     }
   }
 
   return { type: "doc", content };
+}
+
+/**
+ * Parse inline Markdown formatting into Tiptap nodes with marks.
+ * Handles: **bold**, *italic*, `code`, ~~strike~~, <u>underline</u>, ==highlight==
+ */
+function parseInlineFormatting(text: string): TiptapNode[] {
+  const nodes: TiptapNode[] = [];
+  const regex = /(\*\*\*(.+?)\*\*\*|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`|~~(.+?)~~|<u>(.+?)<\/u>|==(.+?)==)/g;
+  let lastIndex = 0;
+  let match;
+
+  while ((match = regex.exec(text)) !== null) {
+    // Add any plain text before this match
+    if (match.index > lastIndex) {
+      const plainText = text.slice(lastIndex, match.index);
+      if (plainText) {
+        nodes.push(textNode(plainText));
+      }
+    }
+
+    const fullMatch = match[0];
+    if (fullMatch.startsWith('***') && fullMatch.endsWith('***')) {
+      // boldItalic
+      nodes.push(textNode(match[2], [{ type: 'bold' }, { type: 'italic' }]));
+    } else if (fullMatch.startsWith('**') && fullMatch.endsWith('**')) {
+      // bold
+      nodes.push(textNode(match[3], [{ type: 'bold' }]));
+    } else if (fullMatch.startsWith('*') && fullMatch.endsWith('*')) {
+      // italic
+      nodes.push(textNode(match[4], [{ type: 'italic' }]));
+    } else if (fullMatch.startsWith('`') && fullMatch.endsWith('`')) {
+      // inline code
+      nodes.push(textNode(match[5], [{ type: 'code' }]));
+    } else if (fullMatch.startsWith('~~') && fullMatch.endsWith('~~')) {
+      // strike
+      nodes.push(textNode(match[6], [{ type: 'strike' }]));
+    } else if (fullMatch.startsWith('<u>') && fullMatch.endsWith('</u>')) {
+      // underline
+      nodes.push(textNode(match[7], [{ type: 'underline' }]));
+    } else if (fullMatch.startsWith('==') && fullMatch.endsWith('==')) {
+      // highlight
+      nodes.push(textNode(match[8], [{ type: 'highlight' }]));
+    }
+
+    lastIndex = match.index + fullMatch.length;
+  }
+
+  // Add remaining plain text
+  if (lastIndex < text.length) {
+    const remaining = text.slice(lastIndex);
+    if (remaining) {
+      nodes.push(textNode(remaining));
+    }
+  }
+
+  // If no formatting found, return single text node
+  if (nodes.length === 0) {
+    nodes.push(textNode(text));
+  }
+
+  return nodes;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -384,6 +447,6 @@ function textNode(text: string, marks?: TiptapMark[]): TiptapNode {
   return {
     type: "text",
     text,
-    ...(marks ? { marks } : {}),
+    ...(marks && marks.length > 0 ? { marks } : {}),
   };
 }

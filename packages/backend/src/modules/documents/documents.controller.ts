@@ -16,6 +16,7 @@ import { Request, Response } from 'express';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/update-document.dto';
+import { ImportDocumentDto } from './dto/import-document.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { DocumentListResponse } from './interfaces/document-info.interface';
 
@@ -171,11 +172,11 @@ export class DocumentsController {
   @Post('import/markdown')
   @UseGuards(AuthGuard)
   async importMarkdown(
-    @Body() body: { title: string; content: string; parentId?: number },
+    @Body() dto: ImportDocumentDto,
     @Req() req: Request,
   ) {
     const userId = (req as any)._user.userId;
-    return this.documentsService.importFromMarkdown(body.title, body.content, userId, body.parentId);
+    return this.documentsService.importFromMarkdown(dto.title, dto.content, userId, dto.parentId);
   }
 
   @Get(':id/export/pdf')

@@ -184,4 +184,74 @@ describe('markdownToTiptap', () => {
     expect(result.type).toBe('doc');
     expect(result.content).toEqual([]);
   });
+
+  it('should parse inline bold (**text**)', () => {
+    const result = markdownToTiptap('This is **bold** text');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const boldNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'bold'));
+    expect(boldNode).toBeDefined();
+    expect(boldNode.text).toBe('bold');
+  });
+
+  it('should parse inline italic (*text*)', () => {
+    const result = markdownToTiptap('This is *italic* text');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const italicNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'italic'));
+    expect(italicNode).toBeDefined();
+    expect(italicNode.text).toBe('italic');
+  });
+
+  it('should parse inline code (`text`)', () => {
+    const result = markdownToTiptap('Use `console.log()`');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const codeNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'code'));
+    expect(codeNode).toBeDefined();
+    expect(codeNode.text).toBe('console.log()');
+  });
+
+  it('should parse boldItalic (***text***)', () => {
+    const result = markdownToTiptap('***boldItalic***');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const biNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'bold'));
+    expect(biNode).toBeDefined();
+    expect(biNode.marks.length).toBe(2); // both bold and italic
+  });
+
+  it('should parse strike (~~text~~)', () => {
+    const result = markdownToTiptap('~~deleted~~');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const strikeNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'strike'));
+    expect(strikeNode).toBeDefined();
+    expect(strikeNode.text).toBe('deleted');
+  });
+
+  it('should parse underline (<u>text</u>)', () => {
+    const result = markdownToTiptap('<u>underlined</u>');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const uNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'underline'));
+    expect(uNode).toBeDefined();
+    expect(uNode.text).toBe('underlined');
+  });
+
+  it('should parse highlight (==text==)', () => {
+    const result = markdownToTiptap('==highlighted==');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    const hlNode = para.content!.find((n: any) => n.type === 'text' && n.marks?.some((m: any) => m.type === 'highlight'));
+    expect(hlNode).toBeDefined();
+    expect(hlNode.text).toBe('highlighted');
+  });
+
+  it('should handle mixed inline formatting in one paragraph', () => {
+    const result = markdownToTiptap('**bold** and *italic* and `code`');
+    const para = result.content!.find((n) => n.type === 'paragraph') as any;
+    expect(para).toBeDefined();
+    expect(para.content!.length).toBe(5); // bold, ' and ', italic, ' and ', code
+  });
 });
