@@ -5,13 +5,48 @@ import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/upd
 import { DocumentListResponse } from './interfaces/document-info.interface';
 import { Prisma } from '@prisma/client';
 import * as crypto from 'crypto';
+import { tiptapToMarkdown, markdownToTiptap } from './utils/tiptap-to-markdown.util';
+import { tiptapToPdf } from './utils/tiptap-to-pdf.util';
 
 @Injectable()
 export class DocumentsService {
   constructor(private prisma: PrismaService) {}
 
-  async find(id: number) {
-    return this.prisma.document.findUnique({ where: { id } });
+  private async getDocumentOrThrow(id: number) {
+    const doc = await this.prisma.document.findUnique({ where: { id } });
+    if (!doc) {
+      throw new NotFoundException('Document not found');
+    }
+    return doc;
+  }
+
+  private async getAccessibleDocument(
+    id: number,
+    userId: number,
+    requiredPermission: 'viewer' | 'editor' = 'viewer',
+  ) {
+    const doc = await this.getDocumentOrThrow(id);
+    if (doc.userId === userId) {
+      return doc;
+    }
+
+    const share = await this.prisma.documentShare.findUnique({
+      where: { documentId_userId: { documentId: id, userId } },
+    });
+
+    if (!share) {
+      throw new ForbiddenException('You do not have access to this document');
+    }
+
+    if (requiredPermission === 'editor' && share.permission !== 'editor') {
+      throw new ForbiddenException('You do not have edit access to this document');
+    }
+
+    return doc;
+  }
+
+  async find(id: number, userId: number) {
+    return this.getAccessibleDocument(id, userId);
   }
 
   async create(dto: CreateDocumentDto, userId: number) {
@@ -25,13 +60,7 @@ export class DocumentsService {
   }
 
   async update(dto: UpdateDocumentDto, userId: number) {
-    const doc = await this.prisma.document.findUnique({ where: { id: dto.id } });
-    if (!doc) {
-      throw new NotFoundException('Document not found');
-    }
-    if (doc.userId !== userId) {
-      throw new ForbiddenException('You do not own this document');
-    }
+    const doc = await this.getAccessibleDocument(dto.id, userId, 'editor');
 
     // Create version snapshot before updating
     await this.createVersion(doc);
@@ -105,7 +134,8 @@ export class DocumentsService {
     });
   }
 
-  async getVersions(documentId: number) {
+  async getVersions(documentId: number, userId: number) {
+    await this.getAccessibleDocument(documentId, userId);
     return this.prisma.documentVersion.findMany({
       where: { documentId },
       orderBy: { version: 'desc' },
@@ -114,9 +144,7 @@ export class DocumentsService {
   }
 
   async rollback(documentId: number, versionId: number, userId: number) {
-    const doc = await this.prisma.document.findUnique({ where: { id: documentId } });
-    if (!doc) throw new NotFoundException('Document not found');
-    if (doc.userId !== userId) throw new ForbiddenException('You do not own this document');
+    const doc = await this.getAccessibleDocument(documentId, userId, 'editor');
 
     const version = await this.prisma.documentVersion.findUnique({ where: { id: versionId } });
     if (!version) throw new NotFoundException('Version not found');
@@ -301,5 +329,77 @@ export class DocumentsService {
       where: { id },
       data: { parentId: parentId ?? null },
     });
+  }
+
+  // ──────────────────────────────────────────────
+  // Export / Import
+  // ──────────────────────────────────────────────
+
+  /**
+   * Export a document as Markdown.
+   * Returns the document metadata and content in Markdown format.
+   */
+  async exportAsMarkdown(id: number, userId: number): Promise<{
+    id: number;
+    title: string;
+    content: string; // Markdown string
+  }> {
+    const doc = await this.getAccessibleDocument(id, userId);
+    if (doc.isFolder) throw new BadRequestException('Cannot export a folder as Markdown');
+
+    const markdown = doc.content ? tiptapToMarkdown(doc.content) : '';
+    return {
+      id: doc.id,
+      title: doc.title,
+      content: markdown,
+    };
+  }
+
+  /**
+   * Import a Markdown document.
+   * Converts Markdown content to Tiptap JSON and creates a new document.
+   */
+  async importFromMarkdown(
+    title: string,
+    markdown: string,
+    userId: number,
+    parentId?: number,
+  ): Promise<{ id: number; title: string }> {
+    // Validate parent if provided
+    if (parentId !== undefined) {
+      const parent = await this.prisma.document.findUnique({ where: { id: parentId } });
+      if (!parent) throw new NotFoundException('Parent folder not found');
+      if (!parent.isFolder) throw new BadRequestException('Target is not a folder');
+      if (parent.userId !== userId) throw new ForbiddenException('You do not own the target folder');
+    }
+
+    const tiptapContent = markdownToTiptap(markdown);
+
+    const created = await this.prisma.document.create({
+      data: {
+        title,
+        content: tiptapContent as unknown as Prisma.InputJsonValue,
+        userId,
+        parentId: parentId ?? null,
+        isFolder: false,
+      },
+    });
+
+    return { id: created.id, title: created.title };
+  }
+
+  /**
+   * Export a document as PDF.
+   * Returns the PDF as a Buffer.
+   */
+  async exportAsPdf(id: number, userId: number): Promise<Buffer> {
+    const doc = await this.getAccessibleDocument(id, userId);
+    if (doc.isFolder) throw new BadRequestException('Cannot export a folder as PDF');
+
+    const pdfBuffer = await tiptapToPdf(doc.content, {
+      title: doc.title,
+    });
+
+    return pdfBuffer;
   }
 }

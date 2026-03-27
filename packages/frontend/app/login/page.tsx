@@ -3,6 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import LoginForm, { ERROR_MESSAGES } from "../components/login";
 
+const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 // 新增：客户端设置 Cookie 的工具函数
 const setClientCookie = (
   name: string,
@@ -23,21 +25,17 @@ export default function LoginPage() {
   const handleSignIn = () => {
     const clientId =
       process.env.NEXT_PUBLIC_GITHUB_CLIENT_ID || "Ov23liLnXI5JngJR7Ykx";
-    const redirectUri =
-      process.env.NEXT_PUBLIC_AUTH_CALLBACK_URL ||
-      "http://localhost:3001/auth/github/callback";
+    const redirectUri = `${BACKEND_URL}/auth/github/callback`;
     const state = Math.random().toString(36).substring(2);
 
-    // 关键修改：用 Cookie 存 state，替换 localStorage
-    setClientCookie("github_oauth_state", state, 600); // 600秒=10分钟有效期，与回调路由一致
+    setClientCookie("github_oauth_state", state, 600);
 
-    // 拼接 GitHub 授权 URL（逻辑不变）临时修改
     const githubAuthUrl =
       `https://github.com/login/oauth/authorize?` +
-      `client_id=Ov23liLnXI5JngJR7Ykx&` +
-      `redirect_uri=http://localhost:3001/auth/github/callback&` +
+      `client_id=${encodeURIComponent(clientId)}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
       `scope=user&` +
-      `state=${state}`;
+      `state=${encodeURIComponent(state)}`;
 
     window.location.href = githubAuthUrl;
   };

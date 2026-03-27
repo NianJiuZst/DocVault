@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Query, Req, Res } from '@nestjs/common';
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import { AuthService } from './auth.service';
 
 @Controller('auth')
@@ -8,16 +8,33 @@ export class AuthController {
     private authService: AuthService,
   ) {}
 
+  private clearOAuthStateCookie(res: Response) {
+    res.cookie('github_oauth_state', '', {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 0,
+      path: '/',
+    });
+  }
+
   // GitHub 回调接口（接收 code 和 state）
   @Get('github/callback')
   async githubCallback(
     @Query('code') code: string,
     @Query('state') state: string,
+    @Req() req: Request,
     @Res() res: Response,
   ) {
     try {
+      const expectedState = req.cookies['github_oauth_state'];
+      this.clearOAuthStateCookie(res);
+
+      if (!state || !expectedState || state !== expectedState) {
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=OAuthStateMismatch`);
+      }
+
       if (!code) {
-        return res.redirect(`${process.env.FRONTEND_URL}/login?error=缺少授权码`);
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=CallbackRouteError`);
       }
 
       // 调用服务处理回调逻辑
@@ -32,14 +49,10 @@ export class AuthController {
         path: '/',
       });
 
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/home/cloud-docs?state=${state}`,
-      );
+      return res.redirect(`${process.env.FRONTEND_URL}/home/cloud-docs`);
     } catch (err) {
       console.error('GitHub 登录失败:', err);
-      return res.redirect(
-        `${process.env.FRONTEND_URL}/login?error=登录失败，请重试`,
-      );
+      return res.redirect(`${process.env.FRONTEND_URL}/login?error=OAuthCallback`);
     }
   }
 

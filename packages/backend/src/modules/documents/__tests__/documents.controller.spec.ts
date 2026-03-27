@@ -20,6 +20,12 @@ const mockDocumentsService = {
   getShares: jest.fn(),
   search: jest.fn(),
   findSharedWithUser: jest.fn(),
+  getTree: jest.fn(),
+  createFolder: jest.fn(),
+  moveDocument: jest.fn(),
+  exportAsMarkdown: jest.fn(),
+  importFromMarkdown: jest.fn(),
+  exportAsPdf: jest.fn(),
 };
 
 const mockJwtService = {
@@ -53,9 +59,9 @@ describe('DocumentsController', () => {
       const mockDoc = { id: 1, title: 'Test', content: {}, userId: 1 };
       mockDocumentsService.find.mockResolvedValue(mockDoc);
 
-      const result = await controller.find(1);
+      const result = await controller.find(1, mockReq as Request);
       expect(result!.id).toBe(1);
-      expect(mockDocumentsService.find).toHaveBeenCalledWith(1);
+      expect(mockDocumentsService.find).toHaveBeenCalledWith(1, 1);
     });
   });
 
@@ -103,8 +109,9 @@ describe('DocumentsController', () => {
     it('should return document versions', async () => {
       mockDocumentsService.getVersions.mockResolvedValue([{ id: 1, version: 1 }]);
 
-      const result = await controller.getVersions(1);
+      const result = await controller.getVersions(1, mockReq as Request);
       expect(result).toHaveLength(1);
+      expect(mockDocumentsService.getVersions).toHaveBeenCalledWith(1, 1);
     });
   });
 
@@ -186,6 +193,126 @@ describe('DocumentsController', () => {
 
       await controller.search('', mockReq as Request);
       expect(mockDocumentsService.search).toHaveBeenCalledWith('', 1);
+    });
+  });
+
+  describe('getTree', () => {
+    it('should return folder tree for current user', async () => {
+      const tree = [
+        { id: 1, title: 'Folder A', isFolder: true, children: [] },
+        { id: 2, title: 'Doc', isFolder: false, children: [] },
+      ];
+      mockDocumentsService.getTree.mockResolvedValue(tree);
+
+      const result = await controller.getTree(mockReq as Request);
+      expect(result).toEqual(tree);
+      expect(mockDocumentsService.getTree).toHaveBeenCalledWith(1);
+    });
+
+    it('should return empty array when no documents', async () => {
+      mockDocumentsService.getTree.mockResolvedValue([]);
+
+      const result = await controller.getTree(mockReq as Request);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  describe('createFolder', () => {
+    it('should create a folder at root level', async () => {
+      const created = { id: 1, title: 'My Folder', isFolder: true };
+      mockDocumentsService.createFolder.mockResolvedValue(created);
+
+      await controller.createFolder({ title: 'My Folder' }, mockReq as Request);
+      expect(mockDocumentsService.createFolder).toHaveBeenCalledWith('My Folder', 1, undefined);
+    });
+
+    it('should create a folder inside a parent folder', async () => {
+      const created = { id: 2, title: 'Sub Folder', isFolder: true, parentId: 1 };
+      mockDocumentsService.createFolder.mockResolvedValue(created);
+
+      await controller.createFolder({ title: 'Sub Folder', parentId: 1 }, mockReq as Request);
+      expect(mockDocumentsService.createFolder).toHaveBeenCalledWith('Sub Folder', 1, 1);
+    });
+  });
+
+  describe('moveDocument', () => {
+    it('should move document to a target folder', async () => {
+      const moved = { id: 2, parentId: 5 };
+      mockDocumentsService.moveDocument.mockResolvedValue(moved);
+
+      await controller.moveDocument(2, { parentId: 5 }, mockReq as Request);
+      expect(mockDocumentsService.moveDocument).toHaveBeenCalledWith(2, 5, 1);
+    });
+
+    it('should move document to root (parentId = null)', async () => {
+      const moved = { id: 2, parentId: null };
+      mockDocumentsService.moveDocument.mockResolvedValue(moved);
+
+      await controller.moveDocument(2, { parentId: null }, mockReq as Request);
+      expect(mockDocumentsService.moveDocument).toHaveBeenCalledWith(2, null, 1);
+    });
+  });
+
+  describe('exportMarkdown', () => {
+    it('should export document as markdown', async () => {
+      const result = { id: 1, title: 'Test', content: '# Hello\n\nWorld' };
+      mockDocumentsService.exportAsMarkdown.mockResolvedValue(result);
+
+      await controller.exportMarkdown(1, mockReq as Request);
+      expect(mockDocumentsService.exportAsMarkdown).toHaveBeenCalledWith(1, 1);
+    });
+  });
+
+  describe('importMarkdown', () => {
+    it('should import markdown as new document', async () => {
+      const result = { id: 10, title: 'Imported' };
+      mockDocumentsService.importFromMarkdown.mockResolvedValue(result);
+
+      await controller.importMarkdown({ title: 'Imported', content: '# Hello' }, mockReq as Request);
+      expect(mockDocumentsService.importFromMarkdown).toHaveBeenCalledWith('Imported', '# Hello', 1, undefined);
+    });
+
+    it('should import markdown into a parent folder', async () => {
+      const result = { id: 11, title: 'Child' };
+      mockDocumentsService.importFromMarkdown.mockResolvedValue(result);
+
+      await controller.importMarkdown({ title: 'Child', content: 'Content', parentId: 5 }, mockReq as Request);
+      expect(mockDocumentsService.importFromMarkdown).toHaveBeenCalledWith('Child', 'Content', 1, 5);
+    });
+  });
+
+  describe('exportPdf', () => {
+    it('should export document as PDF', async () => {
+      const pdfBuffer = Buffer.from('fake pdf content');
+      mockDocumentsService.exportAsPdf.mockResolvedValue(pdfBuffer);
+      mockDocumentsService.find.mockResolvedValue({ id: 1, title: 'Test Doc' });
+
+      const mockRes = { end: jest.fn(), set: jest.fn() } as any;
+      await controller.exportPdf(1, mockReq as Request, mockRes);
+
+      expect(mockDocumentsService.exportAsPdf).toHaveBeenCalledWith(1, 1);
+      expect(mockDocumentsService.find).toHaveBeenCalledWith(1, 1);
+      expect(mockRes.set).toHaveBeenCalledWith({
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="Test_Doc.pdf"',
+        'Content-Length': pdfBuffer.length,
+      });
+      expect(mockRes.end).toHaveBeenCalledWith(pdfBuffer);
+    });
+
+    it('should handle documents with special characters in title', async () => {
+      const pdfBuffer = Buffer.from('fake pdf');
+      mockDocumentsService.exportAsPdf.mockResolvedValue(pdfBuffer);
+      mockDocumentsService.find.mockResolvedValue({ id: 1, title: 'My Doc: Test (1)' });
+
+      const mockRes = { end: jest.fn(), set: jest.fn() } as any;
+      await controller.exportPdf(1, mockReq as Request, mockRes);
+
+      expect(mockRes.set).toHaveBeenCalledWith(
+        expect.objectContaining({
+          'Content-Disposition': 'attachment; filename="My_Doc__Test__1_.pdf"',
+        }),
+      );
     });
   });
 });

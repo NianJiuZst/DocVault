@@ -22,8 +22,14 @@ const mockPrisma = {
     upsert: jest.fn(),
     deleteMany: jest.fn(),
     findMany: jest.fn(),
+    findUnique: jest.fn(),
   },
 } as any;
+
+// Mock pdfkit
+jest.mock('../../documents/utils/tiptap-to-pdf.util', () => ({
+  tiptapToPdf: jest.fn().mockImplementation(async () => Buffer.from('fake pdf content')),
+}));
 
 describe('DocumentsService', () => {
   let service: DocumentsService;
@@ -44,18 +50,35 @@ describe('DocumentsService', () => {
   // find
   // ──────────────────────────────────────────────
   describe('find', () => {
-    it('should return a document by id', async () => {
+    it('should return a document by id for owner', async () => {
       const mockDoc = { id: 1, title: 'Test', content: {}, userId: 1 };
       mockPrisma.document.findUnique.mockResolvedValue(mockDoc);
-      const result = await service.find(1);
+      const result = await service.find(1, 1);
       expect(result).toEqual(mockDoc);
       expect(mockPrisma.document.findUnique).toHaveBeenCalledWith({ where: { id: 1 } });
+      expect(mockPrisma.documentShare.findUnique).not.toHaveBeenCalled();
     });
 
-    it('should return null when document not found', async () => {
+    it('should return a document for shared user', async () => {
+      const mockDoc = { id: 1, title: 'Shared', content: {}, userId: 99 };
+      mockPrisma.document.findUnique.mockResolvedValue(mockDoc);
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'viewer' });
+      const result = await service.find(1, 1);
+      expect(result).toEqual(mockDoc);
+      expect(mockPrisma.documentShare.findUnique).toHaveBeenCalledWith({
+        where: { documentId_userId: { documentId: 1, userId: 1 } },
+      });
+    });
+
+    it('should throw NotFoundException when document not found', async () => {
       mockPrisma.document.findUnique.mockResolvedValue(null);
-      const result = await service.find(999);
-      expect(result).toBeNull();
+      await expect(service.find(999, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw ForbiddenException when user has no access to document', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      mockPrisma.documentShare.findUnique.mockResolvedValue(null);
+      await expect(service.find(1, 1)).rejects.toThrow(ForbiddenException);
     });
   });
 
@@ -105,8 +128,20 @@ describe('DocumentsService', () => {
       await expect(service.update({ id: 999 }, 1)).rejects.toThrow(NotFoundException);
     });
 
-    it('should throw ForbiddenException when user does not own document', async () => {
+    it('should update document when user has shared editor access', async () => {
+      const existing = { id: 1, title: 'Old', content: {}, userId: 99 };
+      mockPrisma.document.findUnique.mockResolvedValue(existing);
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'editor' });
+      mockPrisma.documentVersion.findFirst.mockResolvedValue(null);
+      mockPrisma.documentVersion.create.mockResolvedValue({ id: 1 });
+      mockPrisma.document.update.mockResolvedValue({ id: 1, title: 'Updated' });
+      const result = await service.update({ id: 1, title: 'Updated' }, 1);
+      expect(result.title).toBe('Updated');
+    });
+
+    it('should throw ForbiddenException when user does not have edit access', async () => {
       mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'viewer' });
       await expect(service.update({ id: 1 }, 1)).rejects.toThrow(ForbiddenException);
     });
 
@@ -221,12 +256,13 @@ describe('DocumentsService', () => {
   // ──────────────────────────────────────────────
   describe('getVersions', () => {
     it('should return version list sorted desc', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 1 });
       const versions = [
         { id: 2, version: 2, updatedAt: new Date() },
         { id: 1, version: 1, updatedAt: new Date() },
       ];
       mockPrisma.documentVersion.findMany.mockResolvedValue(versions);
-      const result = await service.getVersions(1);
+      const result = await service.getVersions(1, 1);
       expect(result).toHaveLength(2);
       expect(mockPrisma.documentVersion.findMany).toHaveBeenCalledWith({
         where: { documentId: 1 },
@@ -258,6 +294,7 @@ describe('DocumentsService', () => {
 
     it('should throw ForbiddenException when user does not own document', async () => {
       mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99 });
+      mockPrisma.documentShare.findUnique.mockResolvedValue(null);
       await expect(service.rollback(1, 5, 1)).rejects.toThrow(ForbiddenException);
     });
 
@@ -585,6 +622,117 @@ describe('DocumentsService', () => {
         .mockResolvedValueOnce({ id: 2, userId: 1, isFolder: false })
         .mockResolvedValueOnce({ id: 3, isFolder: false, userId: 1 });
       await expect(service.moveDocument(2, 3, 1)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // exportAsMarkdown
+  // ──────────────────────────────────────────────
+  describe('exportAsMarkdown', () => {
+    it('should export document as markdown for owner', async () => {
+      const doc = { id: 1, title: 'Test Doc', content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Hello' }] }] }, userId: 1, isFolder: false };
+      mockPrisma.document.findUnique.mockResolvedValue(doc);
+      const result = await service.exportAsMarkdown(1, 1);
+      expect(result.id).toBe(1);
+      expect(result.title).toBe('Test Doc');
+      expect(result.content).toBe('Hello');
+    });
+
+    it('should export markdown for shared user', async () => {
+      const doc = { id: 1, title: 'Shared Doc', content: { type: 'doc', content: [] }, userId: 99, isFolder: false };
+      mockPrisma.document.findUnique.mockResolvedValue(doc);
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'viewer' });
+      const result = await service.exportAsMarkdown(1, 1);
+      expect(result.id).toBe(1);
+    });
+
+    it('should throw NotFoundException when document not found', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue(null);
+      await expect(service.exportAsMarkdown(999, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when exporting a folder', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, isFolder: true, userId: 1 });
+      await expect(service.exportAsMarkdown(1, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException when user has no access', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99, isFolder: false });
+      mockPrisma.documentShare.findUnique.mockResolvedValue(null);
+      await expect(service.exportAsMarkdown(1, 1)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // importFromMarkdown
+  // ──────────────────────────────────────────────
+  describe('importFromMarkdown', () => {
+    it('should import markdown as new document', async () => {
+      const created = { id: 10, title: 'Imported Doc', content: {}, userId: 1, parentId: null, isFolder: false };
+      mockPrisma.document.create.mockResolvedValue(created);
+      const result = await service.importFromMarkdown('# Hello\n\nThis is content.', 'Imported Doc', 1);
+      expect(result.id).toBe(10);
+      expect(result.title).toBe('Imported Doc');
+    });
+
+    it('should import markdown into a parent folder', async () => {
+      const parentFolder = { id: 5, isFolder: true, userId: 1 };
+      mockPrisma.document.findUnique.mockResolvedValue(parentFolder);
+      const created = { id: 11, title: 'Child Doc', content: {}, userId: 1, parentId: 5, isFolder: false };
+      mockPrisma.document.create.mockResolvedValue(created);
+      const result = await service.importFromMarkdown('Content', 'Child Doc', 1, 5);
+      expect(result.id).toBe(11);
+    });
+
+    it('should throw NotFoundException when parent folder not found', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue(null);
+      await expect(service.importFromMarkdown('x', 'Doc', 1, 999)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when target is not a folder', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, isFolder: false, userId: 1 });
+      await expect(service.importFromMarkdown('x', 'Doc', 1, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException when parent belongs to another user', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 5, isFolder: true, userId: 99 });
+      await expect(service.importFromMarkdown('x', 'Doc', 1, 5)).rejects.toThrow(ForbiddenException);
+    });
+  });
+
+  // ──────────────────────────────────────────────
+  // exportAsPdf
+  // ──────────────────────────────────────────────
+  describe('exportAsPdf', () => {
+    it('should export document as PDF buffer for owner', async () => {
+      const doc = { id: 1, title: 'PDF Test', content: { type: 'doc', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Test content' }] }] }, userId: 1, isFolder: false };
+      mockPrisma.document.findUnique.mockResolvedValue(doc);
+      const result = await service.exportAsPdf(1, 1);
+      expect(Buffer.isBuffer(result)).toBe(true);
+    });
+
+    it('should export PDF for shared user', async () => {
+      const doc = { id: 1, title: 'Shared PDF', content: {}, userId: 99, isFolder: false };
+      mockPrisma.document.findUnique.mockResolvedValue(doc);
+      mockPrisma.documentShare.findUnique.mockResolvedValue({ documentId: 1, userId: 1, permission: 'editor' });
+      const result = await service.exportAsPdf(1, 1);
+      expect(Buffer.isBuffer(result)).toBe(true);
+    });
+
+    it('should throw NotFoundException when document not found', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue(null);
+      await expect(service.exportAsPdf(999, 1)).rejects.toThrow(NotFoundException);
+    });
+
+    it('should throw BadRequestException when exporting a folder', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, isFolder: true, userId: 1 });
+      await expect(service.exportAsPdf(1, 1)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw ForbiddenException when user has no access', async () => {
+      mockPrisma.document.findUnique.mockResolvedValue({ id: 1, userId: 99, isFolder: false });
+      mockPrisma.documentShare.findUnique.mockResolvedValue(null);
+      await expect(service.exportAsPdf(1, 1)).rejects.toThrow(ForbiddenException);
     });
   });
 });

@@ -10,11 +10,13 @@ import {
   UseGuards,
   ParseIntPipe,
   Req,
+  Res,
 } from '@nestjs/common';
-import { Request } from 'express';
+import { Request, Response } from 'express';
 import { DocumentsService } from './documents.service';
 import { CreateDocumentDto } from './dto/create-document.dto';
 import { UpdateDocumentDto, DeleteDocumentDto, ListDocumentDto } from './dto/update-document.dto';
+import { ImportDocumentDto } from './dto/import-document.dto';
 import { AuthGuard } from '../auth/auth.guard';
 import { DocumentListResponse } from './interfaces/document-info.interface';
 
@@ -50,16 +52,11 @@ export class DocumentsController {
     return this.documentsService.findAllByUser(dto, userId);
   }
 
-  @Get(':id')
-  @UseGuards(AuthGuard)
-  async find(@Param('id', ParseIntPipe) id: number) {
-    return this.documentsService.find(id);
-  }
-
   @Get(':id/versions')
   @UseGuards(AuthGuard)
-  async getVersions(@Param('id', ParseIntPipe) id: number) {
-    return this.documentsService.getVersions(id);
+  async getVersions(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.getVersions(id, userId);
   }
 
   @Post(':id/rollback')
@@ -137,6 +134,13 @@ export class DocumentsController {
     return this.documentsService.getTree(userId);
   }
 
+  @Get(':id')
+  @UseGuards(AuthGuard)
+  async find(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.find(id, userId);
+  }
+
   @Post('folder')
   @UseGuards(AuthGuard)
   async createFolder(
@@ -156,5 +160,48 @@ export class DocumentsController {
   ) {
     const userId = (req as any)._user.userId;
     return this.documentsService.moveDocument(id, body.parentId, userId);
+  }
+
+  // ── Export / Import ──────────────────────────────────────────
+
+  @Get(':id/export/markdown')
+  @UseGuards(AuthGuard)
+  async exportMarkdown(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.exportAsMarkdown(id, userId);
+  }
+
+  @Post('import/markdown')
+  @UseGuards(AuthGuard)
+  async importMarkdown(
+    @Body() dto: ImportDocumentDto,
+    @Req() req: Request,
+  ) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.importFromMarkdown(dto.title, dto.content, userId, dto.parentId);
+  }
+
+  @Get(':id/export/pdf')
+  @UseGuards(AuthGuard)
+  async exportPdf(
+    @Param('id', ParseIntPipe) id: number,
+    @Req() req: Request,
+    @Res() res: Response,
+  ) {
+    const userId = (req as any)._user.userId;
+    const pdfBuffer = await this.documentsService.exportAsPdf(id, userId);
+
+    // Get document title for filename
+    const doc = await this.documentsService.find(id, userId);
+    const filename = doc
+      ? `${doc.title.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_')}.pdf`
+      : 'document.pdf';
+
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `attachment; filename="${filename}"`,
+      'Content-Length': pdfBuffer.length,
+    });
+    res.end(pdfBuffer);
   }
 }

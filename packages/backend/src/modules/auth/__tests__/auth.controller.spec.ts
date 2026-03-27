@@ -3,20 +3,37 @@ import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
 import { Response } from 'express';
 
+const originalFrontendUrl = process.env.FRONTEND_URL;
+process.env.FRONTEND_URL ??= 'http://localhost:3000';
+
 const mockAuthService = {
   handleGitHubCallback: jest.fn(),
 };
 
 describe('AuthController', () => {
   let controller: AuthController;
+  let consoleErrorSpy: jest.SpyInstance;
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
       providers: [{ provide: AuthService, useValue: mockAuthService }],
     }).compile();
     controller = module.get<AuthController>(AuthController);
+  });
+
+  afterEach(() => {
+    consoleErrorSpy.mockRestore();
+  });
+
+  afterAll(() => {
+    if (originalFrontendUrl === undefined) {
+      delete process.env.FRONTEND_URL;
+    } else {
+      process.env.FRONTEND_URL = originalFrontendUrl;
+    }
   });
 
   // ──────────────────────────────────────────────
@@ -28,33 +45,53 @@ describe('AuthController', () => {
       redirect: mockRedirect,
       cookie: jest.fn(),
     } as unknown as Response;
+    const mockReq = {
+      cookies: {
+        github_oauth_state: 'some-state',
+      },
+    } as any;
 
     it('should redirect to login with error when code is missing', async () => {
-      await controller.githubCallback('', 'state', mockRes);
+      await controller.githubCallback('', 'some-state', mockReq, mockRes);
       expect(mockRedirect).toHaveBeenCalledWith(
-        'http://localhost:3000/login?error=缺少授权码',
+        'http://localhost:3000/login?error=CallbackRouteError',
       );
     });
 
-    it('should redirect to cloud-docs with state when code is valid', async () => {
+    it('should redirect to login when state is missing or mismatched', async () => {
+      await controller.githubCallback('valid-code', 'bad-state', mockReq, mockRes);
+      expect(mockAuthService.handleGitHubCallback).not.toHaveBeenCalled();
+      expect(mockRedirect).toHaveBeenCalledWith(
+        'http://localhost:3000/login?error=OAuthStateMismatch',
+      );
+    });
+
+    it('should redirect to cloud-docs when code and state are valid', async () => {
       mockAuthService.handleGitHubCallback.mockResolvedValue({ jwtToken: 'test-jwt-token' });
-      await controller.githubCallback('valid-code', 'some-state', mockRes);
+      await controller.githubCallback('valid-code', 'some-state', mockReq, mockRes);
       expect(mockAuthService.handleGitHubCallback).toHaveBeenCalledWith('valid-code');
-      expect(mockRes.cookie).toHaveBeenCalledWith(
+      expect(mockRes.cookie).toHaveBeenNthCalledWith(
+        1,
+        'github_oauth_state',
+        '',
+        expect.objectContaining({ sameSite: 'lax', maxAge: 0 }),
+      );
+      expect(mockRes.cookie).toHaveBeenNthCalledWith(
+        2,
         'docvault_jwt',
         'test-jwt-token',
         expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
       );
       expect(mockRedirect).toHaveBeenCalledWith(
-        'http://localhost:3000/home/cloud-docs?state=some-state',
+        'http://localhost:3000/home/cloud-docs',
       );
     });
 
     it('should redirect to login with error when handleGitHubCallback throws', async () => {
       mockAuthService.handleGitHubCallback.mockRejectedValue(new Error('OAuth failed'));
-      await controller.githubCallback('valid-code', 'some-state', mockRes);
+      await controller.githubCallback('valid-code', 'some-state', mockReq, mockRes);
       expect(mockRedirect).toHaveBeenCalledWith(
-        'http://localhost:3000/login?error=登录失败，请重试',
+        'http://localhost:3000/login?error=OAuthCallback',
       );
     });
   });
