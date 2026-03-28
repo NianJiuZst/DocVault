@@ -5,7 +5,7 @@ import { NotFoundException, ForbiddenException, BadRequestException } from '@nes
 
 const mockPrisma = {
   $queryRawUnsafe: jest.fn(),
-  document: 
+  document: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
