@@ -168,7 +168,9 @@ jobs:
           DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
 
       - name: Start backend
-        run: pnpm start:dev &
+        run: |
+          pnpm build
+          nohup pnpm start:prod > /tmp/backend.log 2>&1 &
         working-directory: packages/backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
