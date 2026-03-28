@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-const BACKEND_URL = process.env.PORT ? `http://localhost:${process.env.PORT}` : 'http://localhost:3001';
+const BACKEND_URL = process.env.PORT ? `http://127.0.0.1:${process.env.PORT}` : 'http://127.0.0.1:3001';
 const E2E_MODE = process.env.E2E_MODE === 'true';
 
 /**
