@@ -170,7 +170,11 @@ jobs:
       - name: Start backend
         run: |
           pnpm build
-          nohup pnpm start:prod > /tmp/backend.log 2>&1 &
+          setsid pnpm start:prod > /tmp/backend.log 2>&1 &
+          echo "Backend PID: $!"
+          sleep 5
+          ps aux | grep node || echo "No node process found"
+          curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/auth/token || echo "First curl failed"
         working-directory: packages/backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
@@ -185,7 +189,14 @@ jobs:
       - name: Wait for backend to be ready
         run: |
           for i in $(seq 1 30); do
-            curl -s http://localhost:3001/auth/token && break
+            RESP=$(curl -s -w "\n%{http_code}" http://localhost:3001/auth/token)
+            HTTP_CODE=$(echo "$RESP" | tail -1)
+            BODY=$(echo "$RESP" | head -1)
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Backend ready: $BODY"
+              break
+            fi
+            echo "Attempt $i: HTTP $HTTP_CODE - $BODY"
             sleep 2
           done
 
