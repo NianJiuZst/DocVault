@@ -15,8 +15,21 @@ model User {
   email        String?
   documents    Document[]
   shares       DocumentShare[]
+  templates    Template[]
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+}
+
+model Template {
+  id        Int      @id @default(autoincrement())
+  name      String
+  content   Json     // Tiptap JSON content
+  category  String   // e.g., "weekly_report", "meeting_notes", "retro", "prd"
+  isPublic  Boolean  @default(false)
+  ownerId   Int
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Document {
