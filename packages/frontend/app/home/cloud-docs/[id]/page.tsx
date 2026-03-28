@@ -1,19 +1,32 @@
 "use client";
-import { useParams } from "next/navigation";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { TextStyleKit } from "@tiptap/extension-text-style";
-import type { Editor } from "@tiptap/react";
-import { EditorContent, useEditor, useEditorState } from "@tiptap/react";
+import { EditorContent, useEditor } from "@tiptap/react";
 import { TaskItem, TaskList } from "@tiptap/extension-list";
 import StarterKit from "@tiptap/starter-kit";
 import { SuggestionMenu } from "@/extension/suggestion-menu/SuggestionMenu";
 import { YoutubeExtension } from "@/extension/YouTube/YouTube";
+import { useAuth } from "@/app/components/AuthProvider";
 import * as Y from "yjs";
 import { HocuspocusProvider } from "@hocuspocus/provider";
 import Collaboration from "@tiptap/extension-collaboration";
+import EditorActionBar from "./components/EditorActionBar";
+import FormattingToolbar from "./components/FormattingToolbar";
+import ImportMarkdownModal from "./components/ImportMarkdownModal";
+import ShareDrawer from "./components/ShareDrawer";
+import type {
+	ActionMessage,
+	DocumentDetails,
+	DocumentShare,
+	ExportFormat,
+	ShareRole,
+} from "./components/types";
 
 const AUTOSAVE_DELAY = 2000;
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:1234";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const FALLBACK_STATUSES = new Set([404, 405, 415]);
 
 function buildExtensions(yDoc: Y.Doc) {
 	return [
@@ -73,228 +86,140 @@ function buildExtensions(yDoc: Y.Doc) {
 	];
 }
 
-function MenuBar({ editor }: { editor: Editor }) {
-	const editorState = useEditorState({
-		editor,
-		selector: (ctx) => ({
-			isBold: ctx.editor.isActive("bold") ?? false,
-			canBold: ctx.editor.can().chain().toggleBold().run() ?? false,
-			isItalic: ctx.editor.isActive("italic") ?? false,
-			canItalic: ctx.editor.can().chain().toggleItalic().run() ?? false,
-			isStrike: ctx.editor.isActive("strike") ?? false,
-			canStrike: ctx.editor.can().chain().toggleStrike().run() ?? false,
-			isCode: ctx.editor.isActive("code") ?? false,
-			canCode: ctx.editor.can().chain().toggleCode().run() ?? false,
-			canClearMarks: ctx.editor.can().chain().unsetAllMarks().run() ?? false,
-			isParagraph: ctx.editor.isActive("paragraph") ?? false,
-			isHeading1: ctx.editor.isActive("heading", { level: 1 }) ?? false,
-			isHeading2: ctx.editor.isActive("heading", { level: 2 }) ?? false,
-			isHeading3: ctx.editor.isActive("heading", { level: 3 }) ?? false,
-			isBulletList: ctx.editor.isActive("bulletList") ?? false,
-			isOrderedList: ctx.editor.isActive("orderedList") ?? false,
-			isCodeBlock: ctx.editor.isActive("codeBlock") ?? false,
-			isBlockquote: ctx.editor.isActive("blockquote") ?? false,
-			canUndo: ctx.editor.can().chain().undo().run() ?? false,
-			canRedo: ctx.editor.can().chain().redo().run() ?? false,
-		}),
-		equalityFn: (prev, next) => {
-			if (!prev || !next) return false;
-			return (
-				prev.isBold === next.isBold &&
-				prev.canBold === next.canBold &&
-				prev.isItalic === next.isItalic &&
-				prev.canItalic === next.canItalic &&
-				prev.isStrike === next.isStrike &&
-				prev.canStrike === next.canStrike &&
-				prev.isCode === next.isCode &&
-				prev.canCode === next.canCode &&
-				prev.canClearMarks === next.canClearMarks &&
-				prev.isParagraph === next.isParagraph &&
-				prev.isHeading1 === next.isHeading1 &&
-				prev.isHeading2 === next.isHeading2 &&
-				prev.isHeading3 === next.isHeading3 &&
-				prev.isBulletList === next.isBulletList &&
-				prev.isOrderedList === next.isOrderedList &&
-				prev.isCodeBlock === next.isCodeBlock &&
-				prev.isBlockquote === next.isBlockquote &&
-				prev.canUndo === next.canUndo &&
-				prev.canRedo === next.canRedo
-			);
-		},
-	});
+async function getErrorMessage(response: Response, fallbackMessage: string) {
+	const rawText = await response.text();
+	if (!rawText) {
+		return fallbackMessage;
+	}
 
-	if (!editor) return null;
+	try {
+		const parsed = JSON.parse(rawText) as {
+			message?: string | string[];
+			error?: string;
+		};
+		if (Array.isArray(parsed.message)) {
+			return parsed.message.join("，");
+		}
+		if (typeof parsed.message === "string") {
+			return parsed.message;
+		}
+		if (typeof parsed.error === "string") {
+			return parsed.error;
+		}
+	} catch {
+		return rawText;
+	}
 
-	return (
-		<div
-			className="control-group"
-			style={{
-				marginBottom: "1rem",
-				padding: "0.5rem",
-				borderBottom: "1px solid #eee",
-			}}
-		>
-			<div
-				className="button-group"
-				style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}
-			>
-				<button
-					onClick={() => editor.chain().focus().toggleBold().run()}
-					disabled={!editorState.canBold}
-					className={editorState.isBold ? "is-active" : ""}
-					style={getButtonStyle(editorState.isBold)}
-				>
-					Bold
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleItalic().run()}
-					disabled={!editorState.canItalic}
-					className={editorState.isItalic ? "is-active" : ""}
-					style={getButtonStyle(editorState.isItalic)}
-				>
-					Italic
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleStrike().run()}
-					disabled={!editorState.canStrike}
-					className={editorState.isStrike ? "is-active" : ""}
-					style={getButtonStyle(editorState.isStrike)}
-				>
-					Strike
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleCode().run()}
-					disabled={!editorState.canCode}
-					className={editorState.isCode ? "is-active" : ""}
-					style={getButtonStyle(editorState.isCode)}
-				>
-					Code
-				</button>
-				<button
-					onClick={() => editor.chain().focus().unsetAllMarks().run()}
-					style={getButtonStyle(false)}
-				>
-					Clear marks
-				</button>
-				<button
-					onClick={() => editor.chain().focus().clearNodes().run()}
-					style={getButtonStyle(false)}
-				>
-					Clear nodes
-				</button>
-				<button
-					onClick={() => editor.chain().focus().setParagraph().run()}
-					className={editorState.isParagraph ? "is-active" : ""}
-					style={getButtonStyle(editorState.isParagraph)}
-				>
-					Paragraph
-				</button>
-				<button
-					onClick={() =>
-						editor.chain().focus().toggleHeading({ level: 1 }).run()
-					}
-					className={editorState.isHeading1 ? "is-active" : ""}
-					style={getButtonStyle(editorState.isHeading1)}
-				>
-					H1
-				</button>
-				<button
-					onClick={() =>
-						editor.chain().focus().toggleHeading({ level: 2 }).run()
-					}
-					className={editorState.isHeading2 ? "is-active" : ""}
-					style={getButtonStyle(editorState.isHeading2)}
-				>
-					H2
-				</button>
-				<button
-					onClick={() =>
-						editor.chain().focus().toggleHeading({ level: 3 }).run()
-					}
-					className={editorState.isHeading3 ? "is-active" : ""}
-					style={getButtonStyle(editorState.isHeading3)}
-				>
-					H3
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleBulletList().run()}
-					className={editorState.isBulletList ? "is-active" : ""}
-					style={getButtonStyle(editorState.isBulletList)}
-				>
-					Bullet list
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleOrderedList().run()}
-					className={editorState.isOrderedList ? "is-active" : ""}
-					style={getButtonStyle(editorState.isOrderedList)}
-				>
-					Ordered list
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-					className={editorState.isCodeBlock ? "is-active" : ""}
-					style={getButtonStyle(editorState.isCodeBlock)}
-				>
-					Code block
-				</button>
-				<button
-					onClick={() => editor.chain().focus().toggleBlockquote().run()}
-					className={editorState.isBlockquote ? "is-active" : ""}
-					style={getButtonStyle(editorState.isBlockquote)}
-				>
-					Blockquote
-				</button>
-				<button
-					onClick={() => editor.chain().focus().setHorizontalRule().run()}
-					style={getButtonStyle(false)}
-				>
-					Horizontal rule
-				</button>
-				<button
-					onClick={() => editor.chain().focus().undo().run()}
-					disabled={!editorState.canUndo}
-					style={getButtonStyle(false, !editorState.canUndo)}
-				>
-					Undo
-				</button>
-				<button
-					onClick={() => editor.chain().focus().redo().run()}
-					disabled={!editorState.canRedo}
-					style={getButtonStyle(false, !editorState.canRedo)}
-				>
-					Redo
-				</button>
-			</div>
-		</div>
-	);
+	return fallbackMessage;
 }
 
-const getButtonStyle = (isActive: boolean, disabled = false) => ({
-	padding: "0.3rem 0.6rem",
-	border: "1px solid #ddd",
-	borderRadius: "4px",
-	background: isActive ? "#0070f3" : "white",
-	color: isActive ? "white" : "black",
-	cursor: disabled ? "not-allowed" : "pointer",
-	opacity: disabled ? 0.6 : 1,
-});
+async function requestWithFallback(
+	requestBuilders: Array<() => Promise<Response>>,
+) {
+	let lastResponse: Response | null = null;
+
+	for (const buildRequest of requestBuilders) {
+		const response = await buildRequest();
+		lastResponse = response;
+		if (!FALLBACK_STATUSES.has(response.status)) {
+			return response;
+		}
+	}
+
+	if (!lastResponse) {
+		throw new Error("Request failed");
+	}
+
+	return lastResponse;
+}
+
+function sanitizeFilename(name: string) {
+	const trimmed = name.trim();
+	return trimmed.replace(/[^a-zA-Z0-9\u4e00-\u9fa5._-]+/g, "_") || "document";
+}
+
+function downloadBlob(blob: Blob, filename: string) {
+	const url = window.URL.createObjectURL(blob);
+	const anchor = document.createElement("a");
+	anchor.href = url;
+	anchor.download = filename;
+	anchor.click();
+	window.URL.revokeObjectURL(url);
+}
+
+function getFilenameFromDisposition(
+	contentDisposition: string | null,
+	fallback: string,
+) {
+	if (!contentDisposition) {
+		return fallback;
+	}
+
+	const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i);
+	if (utf8Match?.[1]) {
+		return decodeURIComponent(utf8Match[1]);
+	}
+
+	const filenameMatch = contentDisposition.match(/filename="?([^"]+)"?/i);
+	if (filenameMatch?.[1]) {
+		return filenameMatch[1];
+	}
+
+	return fallback;
+}
 
 export default function DocEditor() {
 	const params = useParams();
+	const router = useRouter();
+	const { user } = useAuth();
 	const docId = params.id as string;
-	const [docData, setDocData] = useState<{ title: string; content: any } | null>(null);
-	const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">("saved");
+	const [docData, setDocData] = useState<DocumentDetails | null>(null);
+	const [saveStatus, setSaveStatus] = useState<"saved" | "saving" | "error">(
+		"saved",
+	);
 	const [collaborators, setCollaborators] = useState<number>(0);
+	const [actionMessage, setActionMessage] = useState<ActionMessage | null>(
+		null,
+	);
+	const [exportingFormat, setExportingFormat] = useState<ExportFormat | null>(
+		null,
+	);
+	const [importModalOpen, setImportModalOpen] = useState(false);
+	const [isImporting, setIsImporting] = useState(false);
+	const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
+	const [shareLoading, setShareLoading] = useState(false);
+	const [shareSubmitting, setShareSubmitting] = useState(false);
+	const [shareError, setShareError] = useState<string | null>(null);
+	const [publicSubmitting, setPublicSubmitting] = useState(false);
+	const [shares, setShares] = useState<DocumentShare[]>([]);
 	const saveTimerRef = useRef<NodeJS.Timeout | null>(null);
 	const yDocRef = useRef<Y.Doc>(new Y.Doc());
 	const providerRef = useRef<HocuspocusProvider | null>(null);
+	const canManageSharing = Boolean(
+		user && docData && docData.userId === user.id,
+	);
+
+	const publicShareUrl = useMemo(() => {
+		if (!docData?.shareToken || typeof window === "undefined") {
+			return null;
+		}
+
+		return `${window.location.origin}/shared/${docData.shareToken}`;
+	}, [docData?.shareToken]);
+
+	const showActionMessage = useCallback(
+		(tone: ActionMessage["tone"], text: string) => {
+			setActionMessage({ tone, text });
+		},
+		[],
+	);
 
 	const saveDocument = useCallback(
 		async (content: any) => {
 			if (!docId) return;
 			setSaveStatus("saving");
 			try {
-				const res = await fetch("http://localhost:3001/documents/update", {
+				const res = await fetch(`${API_BASE_URL}/documents/update`, {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					credentials: "include",
@@ -310,11 +235,66 @@ export default function DocEditor() {
 		[docId],
 	);
 
+	const fetchDocument = useCallback(async () => {
+		const response = await fetch(`${API_BASE_URL}/documents/${docId}`, {
+			credentials: "include",
+		});
+
+		if (!response.ok) {
+			throw new Error(await getErrorMessage(response, "加载文档失败"));
+		}
+
+		const data = (await response.json()) as DocumentDetails;
+		setDocData({
+			id: data.id,
+			title: data.title,
+			content: data.content,
+			userId: data.userId,
+			parentId: data.parentId ?? null,
+			isPublic: data.isPublic ?? false,
+			shareToken: data.shareToken ?? null,
+		});
+	}, [docId]);
+
+	const fetchShares = useCallback(async () => {
+		if (!canManageSharing) return;
+
+		setShareLoading(true);
+		setShareError(null);
+
+		try {
+			const response = await requestWithFallback([
+				() =>
+					fetch(`${API_BASE_URL}/documents/${docId}/shared`, {
+						credentials: "include",
+					}),
+				() =>
+					fetch(`${API_BASE_URL}/documents/${docId}/shares`, {
+						credentials: "include",
+					}),
+			]);
+
+			if (!response.ok) {
+				throw new Error(await getErrorMessage(response, "加载共享成员失败"));
+			}
+
+			const data = (await response.json()) as DocumentShare[];
+			setShares(data);
+		} catch (error) {
+			console.error(error);
+			setShareError(
+				error instanceof Error ? error.message : "加载共享成员失败",
+			);
+		} finally {
+			setShareLoading(false);
+		}
+	}, [canManageSharing, docId]);
+
 	useEffect(() => {
 		if (!docId) return;
 
 		// Connect WebSocket collaboration
-		fetch("http://localhost:3001/auth/token", { credentials: "include" })
+		fetch(`${API_BASE_URL}/auth/token`, { credentials: "include" })
 			.then((r) => r.json())
 			.then(({ token }) => {
 				if (providerRef.current) providerRef.current.destroy();
@@ -335,19 +315,21 @@ export default function DocEditor() {
 			.catch(console.error);
 
 		// Load document data
-		fetch(`http://localhost:3001/documents/${docId}`, { credentials: "include" })
-			.then((r) => r.json())
-			.then((data) => {
-				if (data && data.id) {
-					setDocData({ title: data.title, content: data.content });
-				}
-			})
-			.catch(console.error);
+		void fetchDocument().catch((error) => {
+			console.error(error);
+			showActionMessage(
+				"error",
+				error instanceof Error ? error.message : "加载文档失败",
+			);
+		});
 
 		return () => {
+			if (saveTimerRef.current) {
+				clearTimeout(saveTimerRef.current);
+			}
 			providerRef.current?.destroy();
 		};
-	}, [docId]);
+	}, [docId, fetchDocument, showActionMessage]);
 
 	const editor = useEditor({
 		extensions: buildExtensions(yDocRef.current),
@@ -369,45 +351,406 @@ export default function DocEditor() {
 		if (docData?.content && editor) {
 			editor.commands.setContent(docData.content);
 		}
-	}, [docData, editor]);
+	}, [docData?.content, editor]);
 
-	const statusLabel =
-		saveStatus === "saving"
-			? "保存中..."
-			: saveStatus === "error"
-				? "保存失败"
-				: "已保存";
+	useEffect(() => {
+		if (!actionMessage) return;
+
+		const timer = window.setTimeout(() => setActionMessage(null), 3500);
+		return () => window.clearTimeout(timer);
+	}, [actionMessage]);
+
+	useEffect(() => {
+		if (shareDrawerOpen && canManageSharing) {
+			void fetchShares();
+		}
+	}, [shareDrawerOpen, canManageSharing, fetchShares]);
+
+	const handleShare = useCallback(
+		async ({ userId, role }: { userId: number; role: ShareRole }) => {
+			setShareSubmitting(true);
+			setShareError(null);
+
+			try {
+				const response = await fetch(
+					`${API_BASE_URL}/documents/${docId}/share`,
+					{
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({
+							userId,
+							role,
+							permission: role,
+						}),
+					},
+				);
+
+				if (!response.ok) {
+					throw new Error(await getErrorMessage(response, "分享文档失败"));
+				}
+
+				await fetchShares();
+				showActionMessage("success", "共享成员已更新");
+			} catch (error) {
+				console.error(error);
+				const message = error instanceof Error ? error.message : "分享文档失败";
+				setShareError(message);
+				showActionMessage("error", message);
+			} finally {
+				setShareSubmitting(false);
+			}
+		},
+		[docId, fetchShares, showActionMessage],
+	);
+
+	const handleRevokeShare = useCallback(
+		async (targetUserId: number) => {
+			setShareSubmitting(true);
+			setShareError(null);
+
+			try {
+				const response = await fetch(
+					`${API_BASE_URL}/documents/${docId}/share/${targetUserId}`,
+					{
+						method: "DELETE",
+						credentials: "include",
+					},
+				);
+
+				if (!response.ok) {
+					throw new Error(await getErrorMessage(response, "移除共享成员失败"));
+				}
+
+				await fetchShares();
+				showActionMessage("success", "共享成员已移除");
+			} catch (error) {
+				console.error(error);
+				const message =
+					error instanceof Error ? error.message : "移除共享成员失败";
+				setShareError(message);
+				showActionMessage("error", message);
+			} finally {
+				setShareSubmitting(false);
+			}
+		},
+		[docId, fetchShares, showActionMessage],
+	);
+
+	const handleEnablePublic = useCallback(async () => {
+		setPublicSubmitting(true);
+		setShareError(null);
+
+		try {
+			const response = await requestWithFallback([
+				() =>
+					fetch(`${API_BASE_URL}/documents/${docId}/public`, {
+						method: "POST",
+						credentials: "include",
+					}),
+				() =>
+					fetch(`${API_BASE_URL}/documents/${docId}/share-link`, {
+						method: "POST",
+						credentials: "include",
+					}),
+			]);
+
+			if (!response.ok) {
+				throw new Error(await getErrorMessage(response, "生成公开链接失败"));
+			}
+
+			const data = (await response.json()) as { shareToken?: string | null };
+			setDocData((current) =>
+				current
+					? {
+							...current,
+							isPublic: true,
+							shareToken: data.shareToken ?? current.shareToken,
+						}
+					: current,
+			);
+			showActionMessage("success", "公开链接已生成");
+		} catch (error) {
+			console.error(error);
+			const message =
+				error instanceof Error ? error.message : "生成公开链接失败";
+			setShareError(message);
+			showActionMessage("error", message);
+		} finally {
+			setPublicSubmitting(false);
+		}
+	}, [docId, showActionMessage]);
+
+	const handleDisablePublic = useCallback(async () => {
+		setPublicSubmitting(true);
+		setShareError(null);
+
+		try {
+			const response = await fetch(
+				`${API_BASE_URL}/documents/${docId}/public`,
+				{
+					method: "DELETE",
+					credentials: "include",
+				},
+			);
+
+			if (!response.ok) {
+				throw new Error(await getErrorMessage(response, "关闭公开访问失败"));
+			}
+
+			setDocData((current) =>
+				current
+					? {
+							...current,
+							isPublic: false,
+							shareToken: null,
+						}
+					: current,
+			);
+			showActionMessage("success", "公开访问已关闭");
+		} catch (error) {
+			console.error(error);
+			const message =
+				error instanceof Error ? error.message : "关闭公开访问失败";
+			setShareError(message);
+			showActionMessage("error", message);
+		} finally {
+			setPublicSubmitting(false);
+		}
+	}, [docId, showActionMessage]);
+
+	const handleCopyPublicUrl = useCallback(async () => {
+		if (!publicShareUrl) return;
+
+		try {
+			await navigator.clipboard.writeText(publicShareUrl);
+			showActionMessage("success", "公开链接已复制");
+		} catch (error) {
+			console.error(error);
+			showActionMessage("error", "复制公开链接失败");
+		}
+	}, [publicShareUrl, showActionMessage]);
+
+	const handleExport = useCallback(
+		async (format: ExportFormat) => {
+			setExportingFormat(format);
+
+			try {
+				if (format === "markdown") {
+					const response = await fetch(
+						`${API_BASE_URL}/documents/${docId}/export/markdown`,
+						{
+							credentials: "include",
+						},
+					);
+
+					if (!response.ok) {
+						throw new Error(
+							await getErrorMessage(response, "导出 Markdown 失败"),
+						);
+					}
+
+					const data = (await response.json()) as {
+						title: string;
+						content: string;
+					};
+					const filename = `${sanitizeFilename(data.title || docData?.title || `document-${docId}`)}.md`;
+					downloadBlob(
+						new Blob([data.content], { type: "text/markdown;charset=utf-8" }),
+						filename,
+					);
+				} else {
+					const response = await fetch(
+						`${API_BASE_URL}/documents/${docId}/export/pdf`,
+						{
+							credentials: "include",
+						},
+					);
+
+					if (!response.ok) {
+						throw new Error(await getErrorMessage(response, "导出 PDF 失败"));
+					}
+
+					const filename = getFilenameFromDisposition(
+						response.headers.get("content-disposition"),
+						`${sanitizeFilename(docData?.title || `document-${docId}`)}.pdf`,
+					);
+					const blob = await response.blob();
+					downloadBlob(blob, filename);
+				}
+
+				showActionMessage(
+					"success",
+					`已开始导出${format === "pdf" ? " PDF" : " Markdown"}`,
+				);
+			} catch (error) {
+				console.error(error);
+				showActionMessage(
+					"error",
+					error instanceof Error ? error.message : "导出失败",
+				);
+			} finally {
+				setExportingFormat(null);
+			}
+		},
+		[docId, docData?.title, showActionMessage],
+	);
+
+	const handleImportMarkdown = useCallback(
+		async ({ title, file }: { title: string; file: File }) => {
+			setIsImporting(true);
+
+			try {
+				const markdownContent = await file.text();
+				const fallbackParentId =
+					docData &&
+					user &&
+					docData.userId === user.id &&
+					docData.parentId !== null
+						? docData.parentId
+						: undefined;
+
+				const formData = new FormData();
+				formData.append("file", file);
+				formData.append("title", title);
+				formData.append("content", markdownContent);
+				if (fallbackParentId !== undefined) {
+					formData.append("parentId", String(fallbackParentId));
+				}
+
+				let response = await fetch(
+					`${API_BASE_URL}/documents/${docId}/import/markdown`,
+					{
+						method: "POST",
+						credentials: "include",
+						body: formData,
+					},
+				);
+
+				if (FALLBACK_STATUSES.has(response.status)) {
+					response = await fetch(`${API_BASE_URL}/documents/import/markdown`, {
+						method: "POST",
+						headers: { "Content-Type": "application/json" },
+						credentials: "include",
+						body: JSON.stringify({
+							title,
+							content: markdownContent,
+							parentId: fallbackParentId,
+						}),
+					});
+				}
+
+				if (!response.ok) {
+					throw new Error(
+						await getErrorMessage(response, "导入 Markdown 失败"),
+					);
+				}
+
+				const data = (await response.json()) as { id: number };
+				setImportModalOpen(false);
+				showActionMessage("success", "Markdown 已导入为新文档");
+				router.push(`/home/cloud-docs/${data.id}`);
+			} catch (error) {
+				console.error(error);
+				showActionMessage(
+					"error",
+					error instanceof Error ? error.message : "导入 Markdown 失败",
+				);
+			} finally {
+				setIsImporting(false);
+			}
+		},
+		[docData, docId, router, showActionMessage, user],
+	);
+
 	const collabLabel = collaborators > 1 ? `${collaborators} 人正在编辑` : "";
+	const actionMessageClassName =
+		actionMessage?.tone === "error"
+			? "border-red-100 bg-red-50 text-red-600"
+			: actionMessage?.tone === "info"
+				? "border-blue-100 bg-blue-50 text-blue-600"
+				: "border-emerald-100 bg-emerald-50 text-emerald-600";
 
 	return (
-		<div className="w-full h-[calc(100vh-2rem)] p-4 bg-white flex flex-col">
-			<div className="flex items-center justify-between mb-2">
-				{editor && <MenuBar editor={editor} />}
-				<div className="flex items-center gap-4">
-					{collabLabel && (
-						<span className="text-sm text-blue-500">{collabLabel}</span>
-					)}
-					<span
-						className={`text-sm ${
-							saveStatus === "error"
-								? "text-red-500"
-								: saveStatus === "saving"
-									? "text-yellow-500"
-									: "text-green-500"
-						}`}
-					>
-						{statusLabel}
-					</span>
-				</div>
-			</div>
-			<div className="flex-1 relative">
-				<div className="h-full overflow-y-auto relative w-full outline-none">
-					<EditorContent
-						editor={editor}
-						className="prose-container h-full pl-14 outline-none border-none"
+		<div className="flex h-[calc(100vh-2rem)] w-full flex-col bg-slate-50 p-4">
+			<div className="mb-4 rounded-[1.75rem] border border-slate-200 bg-white px-4 py-4 shadow-sm">
+				<div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+					<div className="min-w-0 flex-1">
+						{editor ? (
+							<FormattingToolbar editor={editor} />
+						) : (
+							<p className="text-sm text-slate-500">编辑器初始化中...</p>
+						)}
+					</div>
+					<EditorActionBar
+						canManageSharing={canManageSharing}
+						collabLabel={collabLabel}
+						disabled={!docData}
+						exportingFormat={exportingFormat}
+						isImporting={isImporting}
+						onExport={handleExport}
+						onOpenImport={() => setImportModalOpen(true)}
+						onOpenShare={() => setShareDrawerOpen(true)}
+						saveStatus={saveStatus}
 					/>
 				</div>
+
+				{actionMessage && (
+					<div
+						className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${actionMessageClassName}`}
+					>
+						{actionMessage.text}
+					</div>
+				)}
 			</div>
+
+			<div className="min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm">
+				<div className="border-b border-slate-100 px-8 py-6">
+					<p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-400">
+						Cloud Doc
+					</p>
+					<h1 className="mt-2 text-2xl font-semibold text-slate-900">
+						{docData?.title || "正在加载文档..."}
+					</h1>
+				</div>
+
+				<div className="relative h-[calc(100%-98px)]">
+					<div className="h-full w-full overflow-y-auto outline-none">
+						<EditorContent
+							editor={editor}
+							className="prose-container h-full px-14 py-8 outline-none border-none"
+						/>
+					</div>
+				</div>
+			</div>
+
+			<ImportMarkdownModal
+				isOpen={importModalOpen}
+				isSubmitting={isImporting}
+				onClose={() => setImportModalOpen(false)}
+				onImport={handleImportMarkdown}
+			/>
+
+			<ShareDrawer
+				documentTitle={docData?.title || "未命名文档"}
+				error={shareError}
+				isOpen={shareDrawerOpen}
+				isPublic={docData?.isPublic ?? false}
+				onClose={() => setShareDrawerOpen(false)}
+				onCopyPublicUrl={handleCopyPublicUrl}
+				onDisablePublic={handleDisablePublic}
+				onEnablePublic={handleEnablePublic}
+				onPermissionChange={(targetUserId, role) =>
+					handleShare({ userId: targetUserId, role })
+				}
+				onRevoke={handleRevokeShare}
+				onShare={handleShare}
+				publicSubmitting={publicSubmitting}
+				publicUrl={publicShareUrl}
+				shareLoading={shareLoading}
+				shareSubmitting={shareSubmitting}
+				shares={shares}
+			/>
 		</div>
 	);
 }
