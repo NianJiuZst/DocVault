@@ -170,7 +170,9 @@ jobs:
       - name: Start backend
         run: |
           pnpm build
-          setsid pnpm start:prod > /tmp/backend.log 2>&1 &
+          nohup pnpm start:prod > /tmp/backend.log 2>&1 &
+          sleep 10
+          ps aux | grep "node dist/main" | grep -v grep || echo "Server not running"
         working-directory: packages/backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
