@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { PrismaModule } from './prisma/prisma.module';
 import { validationSchema } from './config/validation.schema';
+import { SharedModule } from './modules/shared/shared.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CollaborationModule } from './modules/collaboration/collaboration.module';
@@ -17,6 +18,7 @@ import { TemplatesModule } from './modules/templates/templates.module';
       validationSchema,
     }),
     PrismaModule, // 注册Prisma模块
+    SharedModule, // 注册共享模块（JwtModule等）
     DocumentsModule, // 注册Documents模块
     AuthModule, // 注册Auth模块
     CollaborationModule, // 注册协作模块
