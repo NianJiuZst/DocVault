@@ -61,34 +61,137 @@ jobs:
         run: pnpm test -- --run
         working-directory: packages/frontend
 
-  # E2E tests require a running backend + frontend + database.
-  # TODO: re-enable once docker-compose or staging environment is available.
-  # frontend-e2e:
-  #   name: Frontend E2E
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - uses: actions/checkout@v5
-  #     - uses: pnpm/action-setup@v4
-  #       with:
-  #         version: 9
-  #     - name: Setup Node.js
-  #       uses: actions/setup-node@v5
-  #       with:
-  #         node-version: "22"
-  #         cache: "pnpm"
-  #     - name: Install dependencies
-  #       run: pnpm install --frozen-lockfile
-  #     - name: Install Playwright Browsers
-  #       run: pnpm exec playwright install --with-deps chromium
-  #       working-directory: packages/frontend
-  #     - name: Run E2E tests
-  #       run: pnpm test:e2e
-  #       working-directory: packages/frontend
-  #       env:
-  #         DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
-  #         GITHUB_CLIENT_ID: test_client_id
-  #         GITHUB_CLIENT_SECRET: test_client_secret
-  #         GITHUB_REDIRECT_URI: http://localhost:3000/auth/github/callback
-  #         JWT_SECRET: test_jwt_secret_min_32_chars_long
-  #         FRONTEND_URL: http://localhost:3000
-  #         PORT: 3001
+  backend-e2e:
+    name: Backend E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: docvault_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        working-directory: packages/backend
+
+      - name: Run Prisma migrations
+        run: pnpm prisma migrate deploy
+        working-directory: packages/backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
+
+      - name: Run E2E tests
+        run: pnpm test:e2e
+        working-directory: packages/backend
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
+          JWT_SECRET: test_jwt_secret_min_32_chars_long_for_e2e
+          FRONTEND_URL: http://localhost:3000
+          PORT: 3001
+
+  frontend-e2e:
+    name: Frontend E2E
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: docvault_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version: "22"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Browsers
+        run: pnpm exec playwright install --with-deps chromium
+        working-directory: packages/frontend
+
+      - name: Generate Prisma Client
+        run: pnpm prisma generate
+        working-directory: packages/backend
+
+      - name: Run Prisma migrations
+        run: pnpm prisma migrate deploy
+        working-directory: packages/backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
+
+      - name: Start backend
+        run: pnpm start:dev &
+        working-directory: packages/backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
+          JWT_SECRET: test_jwt_secret_min_32_chars_long_for_e2e
+          FRONTEND_URL: http://localhost:3000
+          PORT: 3001
+          E2E_MODE: "true"
+          GITHUB_CLIENT_ID: test_client_id
+          GITHUB_CLIENT_SECRET: test_client_secret
+          GITHUB_REDIRECT_URI: http://localhost:3001/auth/github/callback
+
+      - name: Wait for backend to be ready
+        run: |
+          for i in $(seq 1 30); do
+            curl -s http://localhost:3001/auth/token && break
+            sleep 2
+          done
+
+      - name: Run E2E tests
+        run: pnpm exec playwright test
+        working-directory: packages/frontend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
+          GITHUB_CLIENT_ID: test_client_id
+          GITHUB_CLIENT_SECRET: test_client_secret
+          GITHUB_REDIRECT_URI: http://localhost:3001/auth/github/callback
+          JWT_SECRET: test_jwt_secret_min_32_chars_long_for_e2e
+          FRONTEND_URL: http://localhost:3000
+          PORT: 3001
+          E2E_MODE: "true"
