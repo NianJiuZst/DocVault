@@ -185,7 +185,15 @@ jobs:
       - name: Wait for backend to be ready
         run: |
           for i in $(seq 1 30); do
-            curl -s http://localhost:3001/auth/token && break
+            RESP=$(curl -s -w "\n%{http_code}" http://localhost:3001/auth/token 2>/dev/null)
+            HTTP_CODE=$(echo "$RESP" | tail -1)
+            BODY=$(echo "$RESP" | head -1)
+            echo "Attempt $i: HTTP $HTTP_CODE - $BODY"
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "Backend ready!"
+              ss -tlnp | grep 3001 || netstat -tlnp | grep 3001 || echo "Port check unavailable"
+              break
+            fi
             sleep 2
           done
 
