@@ -113,13 +113,12 @@ export class AuthController {
       maxAge: 0,
       path: '/',
     });
-    res.status(200);
-    return { message: 'Logged out successfully' };
+    return res.status(200).json({ message: 'Logged out successfully' });
   }
 
   @Get('token')
   async getToken(@Req() req: any, @Res({ passthrough: true }) res: any) {
     const token = req.cookies?.['docvault_jwt'] ?? null;
-    return { token };
+    return res.json({ token });
   }
 }

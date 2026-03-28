@@ -115,6 +115,9 @@ jobs:
           JWT_SECRET: test_jwt_secret_min_32_chars_long_for_e2e
           FRONTEND_URL: http://localhost:3000
           PORT: 3001
+          GITHUB_CLIENT_ID: test_client_id
+          GITHUB_CLIENT_SECRET: test_client_secret
+          GITHUB_REDIRECT_URI: http://localhost:3001/auth/github/callback
 
   frontend-e2e:
     name: Frontend E2E

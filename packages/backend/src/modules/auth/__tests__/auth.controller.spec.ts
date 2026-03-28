@@ -122,6 +122,7 @@ describe('AuthController', () => {
       const mockJson = jest.fn();
       const mockRes = {
         cookie: jest.fn(),
+        status: jest.fn().mockReturnThis(),
         json: mockJson,
       } as any;
       await controller.logout(mockRes);
