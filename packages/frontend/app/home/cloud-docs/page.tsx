@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from "react";
 import { FaRegFileAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import FolderTree from "./FolderTree";
+import TemplateSelectorModal from "./components/TemplateSelectorModal";
 
 interface DocumentItem {
   id: number;
@@ -42,6 +43,7 @@ export default function CloudDocsPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<number | undefined>(undefined);
+  const [templateModalOpen, setTemplateModalOpen] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -97,14 +99,22 @@ export default function CloudDocsPage() {
     }
   }, [currentFolderId]);
 
-  const handleNewDoc = async () => {
+  const handleNewDoc = () => {
+    setTemplateModalOpen(true);
+  };
+
+  const handleTemplateSelect = async (template: { id: number; name: string } | null) => {
+    setTemplateModalOpen(false);
     try {
-      const res = await fetch("http://localhost:3001/documents/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title: "未命名文档" }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/templates/${template?.id}/create-document`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ title: template ? `${template.name}` : "未命名文档" }),
+        },
+      );
       if (!res.ok) throw new Error("Failed to create document");
       const doc = await res.json();
       router.push(`/home/cloud-docs/${doc.id}`);
@@ -158,7 +168,11 @@ export default function CloudDocsPage() {
               <IoCloudUploadOutline className="h-5 w-5" />
               <span>上传</span>
             </button>
-            <button className="flex items-center gap-2 px-6 py-3 bg-white text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5">
+            <button
+              className="flex items-center gap-2 px-6 py-3 bg-white text-gray-800 border border-gray-300 rounded-lg hover:bg-gray-100 transition-all duration-200 shadow-sm hover:shadow-md transform hover:-translate-y-0.5"
+              onClick={() => setTemplateModalOpen(true)}
+              type="button"
+            >
               <CgTemplate className="h-5 w-5" />
               <span>模板库</span>
             </button>
@@ -246,6 +260,12 @@ export default function CloudDocsPage() {
           )}
         </div>
       </div>
+
+      <TemplateSelectorModal
+        isOpen={templateModalOpen}
+        onClose={() => setTemplateModalOpen(false)}
+        onSelect={handleTemplateSelect}
+      />
     </div>
   );
 }
