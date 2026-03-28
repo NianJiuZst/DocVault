@@ -1,6 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from '../auth.controller';
 import { AuthService } from '../auth.service';
+import { JwtService } from '@nestjs/jwt';
+import { PrismaService } from '../../../prisma/prisma.service';
 import { Response } from 'express';
 
 const originalFrontendUrl = process.env.FRONTEND_URL;
@@ -8,6 +10,18 @@ process.env.FRONTEND_URL ??= 'http://localhost:3000';
 
 const mockAuthService = {
   handleGitHubCallback: jest.fn(),
+};
+
+const mockJwtService = {
+  sign: jest.fn().mockReturnValue('mock-jwt-token'),
+};
+
+const mockPrismaService = {
+  user: {
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    create: jest.fn(),
+  },
 };
 
 describe('AuthController', () => {
@@ -19,7 +33,11 @@ describe('AuthController', () => {
     consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [{ provide: AuthService, useValue: mockAuthService }],
+      providers: [
+        { provide: AuthService, useValue: mockAuthService },
+        { provide: JwtService, useValue: mockJwtService },
+        { provide: PrismaService, useValue: mockPrismaService },
+      ],
     }).compile();
     controller = module.get<AuthController>(AuthController);
   });
@@ -104,6 +122,7 @@ describe('AuthController', () => {
       const mockJson = jest.fn();
       const mockRes = {
         cookie: jest.fn(),
+        status: jest.fn().mockReturnThis(),
         json: mockJson,
       } as any;
       await controller.logout(mockRes);

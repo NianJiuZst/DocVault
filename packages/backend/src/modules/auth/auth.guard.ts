@@ -12,7 +12,8 @@ export class AuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest<Request>();
     
     // 1. 从Cookie中读取JWT
-    const token = request.cookies['docvault_jwt'];
+    const cookies = (request as any).cookies ?? (request as any).signedCookies ?? {};
+    const token = cookies['docvault_jwt'];
     console.log('tokentest!!!!',token);
     if (!token) {
       throw new UnauthorizedException('未登录，请先登录');
@@ -20,9 +21,7 @@ export class AuthGuard implements CanActivate {
 
     // 2. 验证JWT有效性
     try {
-      const payload = this.jwtService.verify(token, {
-        secret: process.env.JWT_SECRET, // 与JwtModule配置的secret一致
-      });
+      const payload = this.jwtService.verify(token);
       // 3. 将解析后的用户信息附加到request对象（供控制器使用）
       // 假设JWT payload中包含用户id、githubUserId等信息
       console.log('payloadtest!!!!',payload);

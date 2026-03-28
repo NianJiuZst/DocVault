@@ -26,7 +26,7 @@ describe('AuthGuard', () => {
     const context = createMockContext('valid.jwt.token');
 
     expect(guard.canActivate(context)).toBe(true);
-    expect(mockJwtService.verify).toHaveBeenCalledWith('valid.jwt.token', { secret: undefined });
+    expect(mockJwtService.verify).toHaveBeenCalledWith('valid.jwt.token');
   });
 
   it('should throw error when no token in cookie', () => {

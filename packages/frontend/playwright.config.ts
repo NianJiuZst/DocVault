@@ -14,7 +14,19 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: {
+          executablePath: process.env.CI
+            ? '/usr/bin/chromium-browser'
+            : undefined,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+          ],
+        },
+      },
     },
   ],
   webServer: process.env.CI
@@ -25,4 +37,6 @@ export default defineConfig({
         reuseExistingServer: !process.env.CI,
         timeout: 120 * 1000,
       },
+  // Share cookies between tests so e2e-login persists
+  storeageState: undefined,
 });

@@ -9,5 +9,6 @@ export const validationSchema = Joi.object({
   GITHUB_CLIENT_SECRET: Joi.string().required().description('GitHub OAuth App Client Secret'),
   GITHUB_REDIRECT_URI: Joi.string().required().description('GitHub OAuth 回调地址'),
   JWT_SECRET: Joi.string().required().min(32).description('JWT 签名密钥（至少32字符）'),
+  JWT_EXPIRES_IN: Joi.string().default('7d').description('JWT 过期时间，如 7d, 24h, 3600（秒）'),
   FRONTEND_URL: Joi.string().required().uri().description('前端地址（用于回调重定向）'),
 });
