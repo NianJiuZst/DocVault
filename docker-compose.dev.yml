@@ -47,10 +47,12 @@ services:
       sh -c "
         corepack enable &&
         pnpm install &&
+        pnpm --filter backend exec prisma generate &&
         pnpm --filter backend exec prisma migrate deploy &&
         pnpm --filter backend start:dev
       "
     environment:
+      CI: "true"
       DATABASE_URL: postgresql://docvault:docvault123@postgres:5432/docvault
       PORT: 3001
       JWT_SECRET: ${JWT_SECRET:-k99U1leRjegHt72zilQVNxcVbrT76GxbrMZ82eC/yqE=}
@@ -60,15 +62,13 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
     ports:
       - "3001:3001"
-      - "9229:9229"  # Debug port
+      - "9229:9229" # Debug port
     volumes:
       - .:/app
       - backend_node_modules:/app/packages/backend/node_modules
-      - backend_dist:/app/packages/backend/dist
     depends_on:
       postgres:
         condition: service_healthy
-
 
   # ============================================
   # Frontend (Next.js) - Dev Mode with Turbopack
@@ -85,6 +85,7 @@ services:
         pnpm --filter frontend dev
       "
     environment:
+      CI: "true"
       NEXT_PUBLIC_API_URL: http://localhost:3001
       GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
       AUTH_CALLBACK_URL: http://localhost:3001/auth/github/callback
@@ -103,5 +104,4 @@ volumes:
   postgres_data_dev:
     driver: local
   backend_node_modules:
-  backend_dist:
   frontend_node_modules:

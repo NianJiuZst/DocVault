@@ -56,12 +56,14 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
 	const LOGIN_PATH = "/home/login";
 
 	// 6. 公开路由白名单（无需登录即可访问）
-	const PUBLIC_PATHS = ["/", "/home/login"];
+	const PUBLIC_PATHS = ["/", "/login", "/home/login"];
 
 	// 7. 登录状态检查与自动跳转（修复依赖数组问题）
 	useEffect(() => {
 		const isPublicPath =
-			PUBLIC_PATHS.includes(pathname) || pathname.startsWith("/shared/");
+			PUBLIC_PATHS.includes(pathname) ||
+			pathname.startsWith("/shared/") ||
+			pathname.startsWith("/auth/");
 
 		// 公开路由不做登录检查，直接跳过
 		if (isPublicPath) {

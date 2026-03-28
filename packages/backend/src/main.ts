@@ -7,9 +7,10 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser()); 
   const configService = app.get(ConfigService);
-  const port = configService.get('port');
+  const port = configService.get<number>('PORT') || 3001;
+  const frontendUrl = configService.get('FRONTEND_URL') || 'http://localhost:3000';
   app.enableCors({
-    origin: 'http://localhost:3000', 
+    origin: frontendUrl, 
     credentials: true, 
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'], 
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'], 

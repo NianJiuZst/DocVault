@@ -105,13 +105,13 @@ export class DocumentsService {
 		dto: ListDocumentDto,
 		userId: number,
 	): Promise<DocumentListResponse> {
-		const page = dto.page ?? 1;
-		const pageSize = dto.pageSize ?? 20;
+		const page = Number(dto.page) || 1;
+		const pageSize = Number(dto.pageSize) || 20;
 		const skip = (page - 1) * pageSize;
 
 		const where: any = { userId };
 		if (dto.folderId !== undefined) {
-			where.parentId = dto.folderId;
+			where.parentId = Number(dto.folderId);
 		}
 
 		const [items, total] = await Promise.all([

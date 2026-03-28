@@ -5,7 +5,7 @@ import { NotFoundException, ForbiddenException, BadRequestException } from '@nes
 
 const mockPrisma = {
   $queryRawUnsafe: jest.fn(),
-  document: {
+  document: 
     findUnique: jest.fn(),
     findMany: jest.fn(),
     create: jest.fn(),
@@ -224,6 +224,45 @@ describe('DocumentsService', () => {
       mockPrisma.document.count.mockResolvedValue(1);
       const result = await service.findAllByUser({ page: 1, pageSize: 20 }, 1);
       expect(result.items[0].createdAt).toBe('2024-01-01T00:00:00.000Z');
+    });
+
+    // ——— 模拟真实 HTTP Query 参数（字符串类型） ———
+    it('should handle string-type page and pageSize from HTTP query params', async () => {
+      mockPrisma.document.findMany.mockResolvedValue([]);
+      mockPrisma.document.count.mockResolvedValue(0);
+      // HTTP Query 参数传入的都是字符串
+      const dto = { page: '2' as unknown as number, pageSize: '50' as unknown as number };
+      const result = await service.findAllByUser(dto, 1);
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 50, take: 50 }),
+      );
+      expect(result.page).toBe(2);
+      expect(result.pageSize).toBe(50);
+    });
+
+    it('should handle string-type folderId from HTTP query params', async () => {
+      mockPrisma.document.findMany.mockResolvedValue([]);
+      mockPrisma.document.count.mockResolvedValue(0);
+      const dto = { folderId: '5' as unknown as number };
+      await service.findAllByUser(dto, 1);
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { userId: 1, parentId: 5 },
+        }),
+      );
+    });
+
+    it('should fallback to defaults when page/pageSize are invalid strings', async () => {
+      mockPrisma.document.findMany.mockResolvedValue([]);
+      mockPrisma.document.count.mockResolvedValue(0);
+      const dto = { page: 'abc' as unknown as number, pageSize: '' as unknown as number };
+      const result = await service.findAllByUser(dto, 1);
+      // Number('abc') = NaN → fallback to 1; Number('') = 0 → fallback to 20
+      expect(mockPrisma.document.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({ skip: 0, take: 20 }),
+      );
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(20);
     });
   });
 

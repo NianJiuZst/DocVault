@@ -30,7 +30,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 interface TemplateSelectorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onSelect: (template: Template) => void;
+  onSelect: (template: Template | null) => void;
 }
 
 export default function TemplateSelectorModal({
@@ -68,8 +68,8 @@ export default function TemplateSelectorModal({
     void fetchTemplates();
   }, [isOpen]);
 
+  /** 确认创建文档，selected 为 null 表示空白文档 */
   const handleConfirm = async () => {
-    if (!selected) return;
     setCreating(true);
     await onSelect(selected);
     setCreating(false);

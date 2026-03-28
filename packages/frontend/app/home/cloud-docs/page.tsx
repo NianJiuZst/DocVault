@@ -3,7 +3,7 @@ import { VscNewFile } from "react-icons/vsc";
 import { IoCloudUploadOutline } from "react-icons/io5";
 import { CgTemplate } from "react-icons/cg";
 import { useState, useEffect, useCallback } from "react";
-import { FaRegFileAlt } from "react-icons/fa";
+import { FaRegFileAlt, FaRegTrashAlt } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import FolderTree from "./FolderTree";
 import TemplateSelectorModal from "./components/TemplateSelectorModal";
@@ -44,6 +44,9 @@ export default function CloudDocsPage() {
   const [error, setError] = useState<string | null>(null);
   const [currentFolderId, setCurrentFolderId] = useState<number | undefined>(undefined);
   const [templateModalOpen, setTemplateModalOpen] = useState(false);
+  const [creatingDoc, setCreatingDoc] = useState(false);
+  const [navigatingDocId, setNavigatingDocId] = useState<number | null>(null);
+  const [deletingDocId, setDeletingDocId] = useState<number | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -105,28 +108,70 @@ export default function CloudDocsPage() {
 
   const handleTemplateSelect = async (template: { id: number; name: string } | null) => {
     setTemplateModalOpen(false);
+    setCreatingDoc(true);
     try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/templates/${template?.id}/create-document`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ title: template ? `${template.name}` : "未命名文档" }),
-        },
-      );
+      let res: Response;
+      if (template) {
+        // 基于模板创建文档
+        res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/templates/${template.id}/create-document`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: template.name }),
+          },
+        );
+      } else {
+        // 创建空白文档
+        res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/documents/create`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({ title: "未命名文档" }),
+          },
+        );
+      }
       if (!res.ok) throw new Error("Failed to create document");
       const doc = await res.json();
       router.push(`/home/cloud-docs/${doc.id}`);
     } catch (err) {
       console.error(err);
       setError("创建文档失败，请稍后重试");
+      setCreatingDoc(false);
     }
   };
 
   const handleDocClick = useCallback((id: number) => {
+    setNavigatingDocId(id);
     router.push(`/home/cloud-docs/${id}`);
   }, [router]);
+
+  /** 删除文档 */
+  const handleDeleteDoc = useCallback(async (id: number) => {
+    if (deletingDocId) return;
+    setDeletingDocId(id);
+    try {
+      const res = await fetch("http://localhost:3001/documents/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ id }),
+      });
+      if (!res.ok) throw new Error("Failed to delete document");
+      // 从本地列表中移除
+      setDocuments((prev) =>
+        prev ? { ...prev, total: prev.total - 1, items: prev.items.filter((d) => d.id !== id) } : prev,
+      );
+    } catch (err) {
+      console.error(err);
+      setError("删除文档失败，请稍后重试");
+    } finally {
+      setDeletingDocId(null);
+    }
+  }, [deletingDocId]);
 
   const handleFolderClick = (folderId: number | undefined) => {
     setCurrentFolderId(folderId);
@@ -224,10 +269,17 @@ export default function CloudDocsPage() {
                   <div
                     key={doc.id}
                     onClick={() => handleDocClick(doc.id)}
-                    className="px-6 py-4 hover:bg-gray-50 transition-colors duration-150 flex items-center justify-between cursor-pointer"
+                    className={`px-6 py-4 hover:bg-gray-50 transition-colors duration-150 flex items-center justify-between cursor-pointer ${navigatingDocId === doc.id ? "opacity-60" : ""}`}
                   >
                     <div className="flex items-center gap-4">
-                      <FaRegFileAlt className="h-5 w-5 text-gray-600 mt-0.5" />
+                      {navigatingDocId === doc.id ? (
+                        <svg className="h-5 w-5 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <FaRegFileAlt className="h-5 w-5 text-gray-600 mt-0.5" />
+                      )}
                       <div>
                         <h3 className="font-medium text-gray-900">{doc.title}</h3>
                         <p className="text-sm text-gray-500 mt-0.5">
@@ -235,7 +287,7 @@ export default function CloudDocsPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-3">
                       {activeTab === "shared" && (
                         <span
                           className={`text-xs px-2 py-0.5 rounded-full ${
@@ -248,6 +300,27 @@ export default function CloudDocsPage() {
                         </span>
                       )}
                       <span className="text-sm text-gray-400">{formatDate(doc.updatedAt)}</span>
+                      {activeTab !== "shared" && (
+                        <button
+                          type="button"
+                          title="删除文档"
+                          disabled={deletingDocId === doc.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            void handleDeleteDoc(doc.id);
+                          }}
+                          className="ml-1 rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500 transition-colors disabled:opacity-40"
+                        >
+                          {deletingDocId === doc.id ? (
+                            <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          ) : (
+                            <FaRegTrashAlt className="h-4 w-4" />
+                          )}
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -256,6 +329,19 @@ export default function CloudDocsPage() {
           ) : (
             <div className="text-center py-12 text-gray-400">
               暂无文档，点击「新建」创建一个吧
+            </div>
+          )}
+
+          {/* 创建文档 loading 遮罩 */}
+          {creatingDoc && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-3">
+                <svg className="h-8 w-8 animate-spin text-blue-500" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                <p className="text-sm text-gray-500">正在创建文档...</p>
+              </div>
             </div>
           )}
         </div>

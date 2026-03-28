@@ -186,6 +186,7 @@ export default function DocEditor() {
 	);
 	const [importModalOpen, setImportModalOpen] = useState(false);
 	const [isImporting, setIsImporting] = useState(false);
+	const [editingTitle, setEditingTitle] = useState<string>("");
 	const [shareDrawerOpen, setShareDrawerOpen] = useState(false);
 	const [shareLoading, setShareLoading] = useState(false);
 	const [shareSubmitting, setShareSubmitting] = useState(false);
@@ -254,6 +255,7 @@ export default function DocEditor() {
 			isPublic: data.isPublic ?? false,
 			shareToken: data.shareToken ?? null,
 		});
+		setEditingTitle(data.title);
 	}, [docId]);
 
 	const fetchShares = useCallback(async () => {
@@ -664,6 +666,26 @@ export default function DocEditor() {
 	);
 
 	const collabLabel = collaborators > 1 ? `${collaborators} 人正在编辑` : "";
+
+	/** 保存文档标题 */
+	const saveTitle = useCallback(async () => {
+		const trimmed = editingTitle.trim();
+		if (!docId || !trimmed || trimmed === docData?.title) return;
+		try {
+			const res = await fetch(`${API_BASE_URL}/documents/update`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				credentials: "include",
+				body: JSON.stringify({ id: Number(docId), title: trimmed }),
+			});
+			if (!res.ok) throw new Error("Save title failed");
+			setDocData((prev) => (prev ? { ...prev, title: trimmed } : prev));
+			showActionMessage("success", "标题已保存");
+		} catch (err) {
+			console.error("Save title failed:", err);
+			showActionMessage("error", "标题保存失败");
+		}
+	}, [docId, editingTitle, docData?.title, showActionMessage]);
 	const actionMessageClassName =
 		actionMessage?.tone === "error"
 			? "border-red-100 bg-red-50 text-red-600"
@@ -705,23 +727,51 @@ export default function DocEditor() {
 			</div>
 
 			<div className="min-h-0 flex-1 rounded-[2rem] border border-slate-200 bg-white shadow-sm">
-				<div className="border-b border-slate-100 px-8 py-6">
-					<p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-400">
-						Cloud Doc
-					</p>
-					<h1 className="mt-2 text-2xl font-semibold text-slate-900">
-						{docData?.title || "正在加载文档..."}
-					</h1>
-				</div>
-
-				<div className="relative h-[calc(100%-98px)]">
-					<div className="h-full w-full overflow-y-auto outline-none">
-						<EditorContent
-							editor={editor}
-							className="prose-container h-full px-14 py-8 outline-none border-none"
-						/>
+				{!docData ? (
+					/* 加载骨架屏 */
+					<div className="animate-pulse px-8 py-6">
+						<div className="h-3 w-20 rounded bg-slate-200" />
+						<div className="mt-4 h-7 w-64 rounded bg-slate-200" />
+						<div className="mt-8 space-y-4">
+							<div className="h-4 w-full rounded bg-slate-100" />
+							<div className="h-4 w-5/6 rounded bg-slate-100" />
+							<div className="h-4 w-4/6 rounded bg-slate-100" />
+							<div className="h-4 w-full rounded bg-slate-100" />
+							<div className="h-4 w-3/4 rounded bg-slate-100" />
+						</div>
 					</div>
-				</div>
+				) : (
+					<>
+						<div className="border-b border-slate-100 px-8 py-6">
+							<p className="text-sm font-medium uppercase tracking-[0.22em] text-slate-400">
+								Cloud Doc
+							</p>
+							<input
+								type="text"
+								value={editingTitle}
+								onChange={(e) => setEditingTitle(e.target.value)}
+								onBlur={() => void saveTitle()}
+								onKeyDown={(e) => {
+									if (e.key === "Enter") {
+										e.preventDefault();
+										(e.target as HTMLInputElement).blur();
+									}
+								}}
+								placeholder="输入文档标题..."
+								className="mt-2 w-full border-none bg-transparent text-2xl font-semibold text-slate-900 outline-none placeholder:text-slate-300 focus:ring-0"
+							/>
+						</div>
+
+						<div className="relative h-[calc(100%-98px)]">
+							<div className="h-full w-full overflow-y-auto outline-none">
+								<EditorContent
+									editor={editor}
+									className="prose-container h-full px-14 py-8 outline-none border-none"
+								/>
+							</div>
+						</div>
+					</>
+				)}
 			</div>
 
 			<ImportMarkdownModal

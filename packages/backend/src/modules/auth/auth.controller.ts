@@ -40,11 +40,11 @@ export class AuthController {
       // 调用服务处理回调逻辑
       const { jwtToken } = await this.authService.handleGitHubCallback(code);
 
-      // 设置 JWT 到 HttpOnly Cookie
+      // 设置 JWT 到 HttpOnly Cookie（使用 lax 以支持 OAuth 跨站重定向后的 cookie 传递）
       res.cookie('docvault_jwt', jwtToken, {
         httpOnly: true, 
         secure: process.env.NODE_ENV === 'production',  
-        sameSite: 'strict',  
+        sameSite: 'lax',  
         maxAge: 7 * 24 * 60 * 60 * 1000, 
         path: '/',
       });
@@ -61,7 +61,7 @@ export class AuthController {
     res.cookie('docvault_jwt', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
+      sameSite: 'lax',
       maxAge: 0,
       path: '/',
     });
