@@ -1,0 +1,87 @@
+version: "3.8"
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: docvault-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docvault
+      POSTGRES_USER: docvault
+      POSTGRES_PASSWORD: docvault123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docvault -d docvault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Backend (NestJS)
+  # ============================================
+  backend:
+    build:
+      context: .
+      dockerfile: packages/backend/Dockerfile
+      target: production
+    container_name: docvault-backend
+    restart: unless-stopped
+    environment:
+      # Database - use Docker network hostname
+      DATABASE_URL: postgresql://docvault:docvault123@postgres:5432/docvault
+      # Server
+      PORT: 3001
+      # JWT
+      JWT_SECRET: ${JWT_SECRET:-k99U1leRjegHt72zilQVNxcVbrT76GxbrMZ82eC/yqE=}
+      # GitHub OAuth (fill in your own values)
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:3001/auth/github/callback}
+      # Frontend URL for CORS
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3001 || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  # ============================================
+  # Frontend (Next.js)
+  # ============================================
+  frontend:
+    build:
+      context: .
+      dockerfile: packages/frontend/Dockerfile
+      target: production
+    container_name: docvault-frontend
+    restart: unless-stopped
+    environment:
+      # Backend API URL (Docker network)
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      # GitHub OAuth (public vars needed at build time)
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
+      AUTH_CALLBACK_URL: ${AUTH_CALLBACK_URL:-http://localhost:3001/auth/github/callback}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data:
+    driver: local

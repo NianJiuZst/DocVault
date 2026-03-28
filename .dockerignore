@@ -1,0 +1,52 @@
+# Dependencies
+**/node_modules
+**/.pnpm-store
+
+# Build outputs
+**/dist
+**/.next
+**/coverage
+
+# Environment files (inject via Docker env, not baked in)
+**/.env
+**/.env.local
+**/.env.*.local
+
+# Version control
+**/.git
+**/.gitignore
+
+# IDE
+**/.vscode
+**/.idea
+**/*.swp
+**/*.swo
+
+# OS
+**/.DS_Store
+**/Thumbs.db
+
+# Logs
+**/*.log
+**/npm-debug.log*
+**/pnpm-debug.log*
+
+# Tests
+**/coverage
+**/*.test.ts
+**/*.spec.ts
+**/__tests__
+
+# Docker
+**/Dockerfile
+**/docker-compose*.yml
+
+# Docs
+**/README.md
+**/CHANGELOG.md
+**/LICENSE
+
+# Temporary
+**/*.tmp
+**/*.temp
+**/.cache
