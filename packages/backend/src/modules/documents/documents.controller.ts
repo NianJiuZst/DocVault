@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Controller,
   Post,
   Get,
@@ -74,11 +75,15 @@ export class DocumentsController {
   @UseGuards(AuthGuard)
   async share(
     @Param('id', ParseIntPipe) id: number,
-    @Body() body: { userId: number; permission: 'viewer' | 'editor' },
+    @Body() body: { userId: number; permission?: 'viewer' | 'editor'; role?: 'viewer' | 'editor' },
     @Req() req: Request,
   ) {
     const userId = (req as any)._user.userId;
-    return this.documentsService.share(id, body.userId, body.permission, userId);
+    const permission = body.permission ?? body.role;
+    if (!permission) {
+      throw new BadRequestException('Missing share permission');
+    }
+    return this.documentsService.share(id, body.userId, permission, userId);
   }
 
   @Delete(':id/share/:targetUserId')
@@ -99,11 +104,32 @@ export class DocumentsController {
     return this.documentsService.getShares(id, userId);
   }
 
+  @Get(':id/shared')
+  @UseGuards(AuthGuard)
+  async getShared(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.getShares(id, userId);
+  }
+
   @Post(':id/share-link')
   @UseGuards(AuthGuard)
   async generateShareLink(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
     const userId = (req as any)._user.userId;
     return this.documentsService.generateShareLink(id, userId);
+  }
+
+  @Post(':id/public')
+  @UseGuards(AuthGuard)
+  async enablePublic(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.generateShareLink(id, userId);
+  }
+
+  @Delete(':id/public')
+  @UseGuards(AuthGuard)
+  async disablePublic(@Param('id', ParseIntPipe) id: number, @Req() req: Request) {
+    const userId = (req as any)._user.userId;
+    return this.documentsService.disableShareLink(id, userId);
   }
 
   @Get('shared/:token')
