@@ -17,7 +17,9 @@ export default defineConfig({
       use: {
         ...devices['Desktop Chrome'],
         launchOptions: {
-          executablePath: '/usr/bin/chromium-browser',
+          executablePath: process.env.CI
+            ? '/usr/bin/chromium-browser'
+            : undefined,
           args: [
             '--no-sandbox',
             '--disable-setuid-sandbox',
