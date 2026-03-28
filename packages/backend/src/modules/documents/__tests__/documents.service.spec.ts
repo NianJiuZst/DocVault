@@ -4,6 +4,7 @@ import { PrismaService } from '../../../prisma/prisma.service';
 import { NotFoundException, ForbiddenException, BadRequestException } from '@nestjs/common';
 
 const mockPrisma = {
+  $queryRawUnsafe: jest.fn(),
   document: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
@@ -451,26 +452,78 @@ describe('DocumentsService', () => {
   // search
   // ──────────────────────────────────────────────
   describe('search', () => {
-    it('should return matching documents', async () => {
-      const docs = [{ id: 1, title: 'Test Doc', createdAt: new Date(), updatedAt: new Date() }];
-      mockPrisma.document.findMany.mockResolvedValue(docs);
+    it('should return matching documents with $queryRawUnsafe', async () => {
+      const docs = [
+        { id: 1, title: 'Test Doc', createdAt: new Date('2024-01-01'), updatedAt: new Date('2024-01-02') },
+      ];
+      mockPrisma.$queryRawUnsafe.mockResolvedValue(docs);
       const result = await service.search('Test', 1);
       expect(result).toHaveLength(1);
-      expect(mockPrisma.document.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            userId: 1,
-            OR: [{ title: { contains: 'Test', mode: 'insensitive' } }],
-          }),
-        }),
+      expect(result[0].id).toBe(1);
+      expect(result[0].title).toBe('Test Doc');
+      expect(result[0].createdAt).toBe('2024-01-01T00:00:00.000Z');
+      expect(result[0].updatedAt).toBe('2024-01-02T00:00:00.000Z');
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('"userId" = $1'),
+        1,
+        'Test',
       );
     });
 
     it('should limit results to 20', async () => {
-      mockPrisma.document.findMany.mockResolvedValue([]);
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
       await service.search('x', 1);
-      expect(mockPrisma.document.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ take: 20 }),
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('LIMIT 20'),
+        1,
+        'x',
+      );
+    });
+
+    it('should return empty array when query is empty after sanitization', async () => {
+      const result = await service.search('():*&|!<>', 1);
+      expect(result).toHaveLength(0);
+      expect(mockPrisma.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('should return empty array for whitespace-only query', async () => {
+      const result = await service.search('   ', 1);
+      expect(result).toHaveLength(0);
+      expect(mockPrisma.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('should include searchVector and ts_rank in SQL query', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      await service.search('test', 1);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('"searchVector"'),
+        expect.any(Number),
+        expect.any(String),
+      );
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('ts_rank'),
+        expect.any(Number),
+        expect.any(String),
+      );
+    });
+
+    it('should pass sanitized query (special chars removed) to $queryRawUnsafe', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      await service.search('test<script>', 1);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.any(String),
+        1,
+        'test script', // '<>' replaced with spaces by sanitization
+      );
+    });
+
+    it('should handle multi-word query correctly', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      await service.search('hello world', 1);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.any(String),
+        1,
+        'hello world',
       );
     });
   });

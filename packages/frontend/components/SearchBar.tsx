@@ -24,7 +24,7 @@ export default function SearchBar() {
     }
     try {
       const res = await fetch(
-        `http://localhost:3001/documents/search?q=${encodeURIComponent(value)}`,
+        `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/documents/search?q=${encodeURIComponent(value)}`,
         { credentials: "include" },
       );
       if (res.ok) {
