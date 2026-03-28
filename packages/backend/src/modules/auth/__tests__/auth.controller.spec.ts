@@ -80,7 +80,7 @@ describe('AuthController', () => {
         2,
         'docvault_jwt',
         'test-jwt-token',
-        expect.objectContaining({ httpOnly: true, sameSite: 'strict' }),
+        expect.objectContaining({ httpOnly: true, sameSite: 'lax' }),
       );
       expect(mockRedirect).toHaveBeenCalledWith(
         'http://localhost:3000/home/cloud-docs',
