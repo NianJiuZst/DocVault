@@ -1,13 +1,14 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
+import * as cookieParser from 'cookie-parser';
 import { AppModule } from '../src/app.module';
 import { cleanDatabase, seedTestUser, prisma } from './setup-e2e';
 
 describe('App E2E', () => {
   let app: INestApplication;
   // Store the agent so we can persist cookies across requests
-  const agent = request.agent(app.getHttpServer());
+  let agent: ReturnType<typeof request.agent>;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -15,8 +16,10 @@ describe('App E2E', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
-    app.set('trust proxy', true);
+    app.use(cookieParser());
+    (app as any).set('trust proxy', true);
     await app.init();
+    agent = request.agent(app.getHttpServer());
   });
 
   afterAll(async () => {

@@ -105,7 +105,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  async logout(@Res() res: any) {
+  async logout(@Res({ passthrough: true }) res: any) {
     res.cookie('docvault_jwt', '', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -113,15 +113,13 @@ export class AuthController {
       maxAge: 0,
       path: '/',
     });
-    return res.json({ message: 'Logged out successfully' });
+    res.status(200);
+    return { message: 'Logged out successfully' };
   }
 
   @Get('token')
-  async getToken(@Req() req: any, @Res() res: any) {
-    const token = req.cookies['docvault_jwt'];
-    if (!token) {
-      return res.json({ token: null });
-    }
-    return res.json({ token });
+  async getToken(@Req() req: any, @Res({ passthrough: true }) res: any) {
+    const token = req.cookies?.['docvault_jwt'] ?? null;
+    return { token };
   }
 }

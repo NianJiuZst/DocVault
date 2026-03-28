@@ -3,26 +3,12 @@ import { PrismaClient } from '@prisma/client';
 export const prisma = new PrismaClient();
 
 export async function cleanDatabase() {
-  // Disable FK checks temporarily, truncate, re-enable
-  await prisma.$executeRaw`
-    ALTER TABLE "DocumentShare" DISABLE TRIGGER ALL;
-    ALTER TABLE "DocumentVersion" DISABLE TRIGGER ALL;
-    ALTER TABLE "Document" DISABLE TRIGGER ALL;
-    ALTER TABLE "Template" DISABLE TRIGGER ALL;
-    ALTER TABLE "User" DISABLE TRIGGER ALL;
-  `;
-  await prisma.$executeRaw`TRUNCATE TABLE "DocumentShare" CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "DocumentVersion" CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "Document" CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "Template" CASCADE`;
-  await prisma.$executeRaw`TRUNCATE TABLE "User" CASCADE`;
-  await prisma.$executeRaw`
-    ALTER TABLE "DocumentShare" ENABLE TRIGGER ALL;
-    ALTER TABLE "DocumentVersion" ENABLE TRIGGER ALL;
-    ALTER TABLE "Document" ENABLE TRIGGER ALL;
-    ALTER TABLE "Template" ENABLE TRIGGER ALL;
-    ALTER TABLE "User" ENABLE TRIGGER ALL;
-  `;
+  // Delete in correct order to respect FK constraints (children first, then parents)
+  await prisma.documentShare.deleteMany();
+  await prisma.documentVersion.deleteMany();
+  await prisma.document.deleteMany();
+  await prisma.template.deleteMany();
+  await prisma.user.deleteMany();
 }
 
 export async function seedTestUser() {
