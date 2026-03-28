@@ -38,7 +38,7 @@ test.describe('DocVault Frontend E2E', () => {
 
   test('login page has GitHub login button', async ({ page }) => {
     await page.goto('/home/login');
-    const githubButton = page.getByText('Sign in with GitHub');
+    const githubButton = page.getByText('使用 GitHub 登录');
     await expect(githubButton).toBeVisible();
   });
 
@@ -60,7 +60,7 @@ test.describe('DocVault Frontend E2E', () => {
 
   test('calendar page placeholder is visible', async ({ page }) => {
     await page.goto('/home/calendar');
-    const placeholder = page.getByText('日历');
+    const placeholder = page.getByText('日历').first();
     await expect(placeholder).toBeVisible();
   });
 

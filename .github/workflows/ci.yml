@@ -110,6 +110,7 @@ jobs:
         working-directory: packages/backend
         env:
           NODE_ENV: test
+          E2E_MODE: "true"
           DATABASE_URL: postgresql://test:test@localhost:5432/docvault_test
           JWT_SECRET: test_jwt_secret_min_32_chars_long_for_e2e
           FRONTEND_URL: http://localhost:3000

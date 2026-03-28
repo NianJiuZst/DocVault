@@ -53,11 +53,6 @@ describe('App E2E', () => {
       expect(res.headers['set-cookie']).toBeDefined();
     });
 
-    // Note: "should reject e2e-login when not in test mode" requires running without NODE_ENV=test
-    // which is not compatible with the current test setup. The protection is verified by the
-    // ForbiddenException check in auth.controller.ts e2eLogin method.
-    it.todo('should reject e2e-login when not in test mode (requires separate process)');
-
     it('should redirect with test token via github/callback in e2e mode', async () => {
       const res = await request(app.getHttpServer())
         .get('/auth/github/callback?code=e2e-test-token&state=test')
