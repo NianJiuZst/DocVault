@@ -485,6 +485,47 @@ describe('DocumentsService', () => {
       expect(result).toHaveLength(0);
       expect(mockPrisma.$queryRawUnsafe).not.toHaveBeenCalled();
     });
+
+    it('should return empty array for whitespace-only query', async () => {
+      const result = await service.search('   ', 1);
+      expect(result).toHaveLength(0);
+      expect(mockPrisma.$queryRawUnsafe).not.toHaveBeenCalled();
+    });
+
+    it('should include searchVector and ts_rank in SQL query', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      await service.search('test', 1);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('"searchVector"'),
+        expect.any(Number),
+        expect.any(String),
+      );
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.stringContaining('ts_rank'),
+        expect.any(Number),
+        expect.any(String),
+      );
+    });
+
+    it('should pass sanitized query (special chars removed) to $queryRawUnsafe', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      await service.search('test<script>', 1);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.any(String),
+        1,
+        'test script', // '<>' replaced with spaces by sanitization
+      );
+    });
+
+    it('should handle multi-word query correctly', async () => {
+      mockPrisma.$queryRawUnsafe.mockResolvedValue([]);
+      await service.search('hello world', 1);
+      expect(mockPrisma.$queryRawUnsafe).toHaveBeenCalledWith(
+        expect.any(String),
+        1,
+        'hello world',
+      );
+    });
   });
 
   // ──────────────────────────────────────────────
