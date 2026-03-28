@@ -1,0 +1,107 @@
+version: "3.8"
+
+# ============================================
+# Development Environment (with Hot Reload)
+# ============================================
+# Usage:
+#   docker compose -f docker-compose.dev.yml up
+#
+# Notes:
+#   - Code changes reflect in real-time (bind mounts)
+#   - No rebuilding needed for most changes
+#   - Backend: NestJS --watch mode
+#   - Frontend: Next.js dev server with Turbopack
+
+services:
+  # ============================================
+  # PostgreSQL Database
+  # ============================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: docvault-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docvault
+      POSTGRES_USER: docvault
+      POSTGRES_PASSWORD: docvault123
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U docvault -d docvault"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================
+  # Backend (NestJS) - Dev Mode with Watch
+  # ============================================
+  backend:
+    image: node:22-alpine
+    container_name: docvault-backend-dev
+    restart: unless-stopped
+    working_dir: /app
+    command: >
+      sh -c "
+        corepack enable &&
+        pnpm install &&
+        pnpm --filter backend exec prisma migrate deploy &&
+        pnpm --filter backend start:dev
+      "
+    environment:
+      DATABASE_URL: postgresql://docvault:docvault123@postgres:5432/docvault
+      PORT: 3001
+      JWT_SECRET: ${JWT_SECRET:-k99U1leRjegHt72zilQVNxcVbrT76GxbrMZ82eC/yqE=}
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
+      GITHUB_CLIENT_SECRET: ${GITHUB_CLIENT_SECRET:-your_github_client_secret}
+      GITHUB_REDIRECT_URI: ${GITHUB_REDIRECT_URI:-http://localhost:3001/auth/github/callback}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+    ports:
+      - "3001:3001"
+      - "9229:9229"  # Debug port
+    volumes:
+      - .:/app
+      - backend_node_modules:/app/packages/backend/node_modules
+      - backend_dist:/app/packages/backend/dist
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+
+  # ============================================
+  # Frontend (Next.js) - Dev Mode with Turbopack
+  # ============================================
+  frontend:
+    image: node:22-alpine
+    container_name: docvault-frontend-dev
+    restart: unless-stopped
+    working_dir: /app
+    command: >
+      sh -c "
+        corepack enable &&
+        pnpm install &&
+        pnpm --filter frontend dev
+      "
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:3001
+      GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-your_github_client_id}
+      AUTH_CALLBACK_URL: http://localhost:3001/auth/github/callback
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - frontend_node_modules:/app/packages/frontend/node_modules
+    depends_on:
+      - backend
+
+# ============================================
+# Volumes
+# ============================================
+volumes:
+  postgres_data_dev:
+    driver: local
+  backend_node_modules:
+  backend_dist:
+  frontend_node_modules:
