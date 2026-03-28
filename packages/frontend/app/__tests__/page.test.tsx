@@ -1,52 +1,92 @@
+import type { ReactNode } from "react";
 import { render, screen } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { describe, it, expect, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import HomePage from "../page";
 
-// Mock BackgroundParticles to avoid canvas/getContext not supported in jsdom
-vi.mock("../../components/BackgroundParticles", () => ({
-  default: vi.fn(() => null),
+vi.mock("next/font/google", () => ({
+  Inter: () => ({ className: "mock-font", variable: "mock-font-inter" }),
+  Manrope: () => ({ className: "mock-font", variable: "mock-font-manrope" }),
 }));
 
-const mockPush = vi.fn();
-vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: mockPush }),
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: ReactNode;
+    href: string;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
 }));
 
 describe("HomePage", () => {
-  it("should render the page title", () => {
+  it("renders the hero headline", () => {
     render(<HomePage />);
-    expect(screen.getByText("DocVault")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", { level: 1, name: "DocVault" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "现代化协同文档编辑器，内置 AI Agent 与 RAG 知识库关联功能",
+      ),
+    ).toBeInTheDocument();
   });
 
-  it("should render the subtitle", () => {
+  it("renders the main feature sections", () => {
     render(<HomePage />);
-    expect(screen.getByText("现代化协同文档编辑器")).toBeInTheDocument();
+
+    expect(
+      screen.getByRole("heading", { level: 3, name: "编辑器" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "协作编辑" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "知识库" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "模板" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "导入导出" }),
+    ).toBeInTheDocument();
   });
 
-  it("should render all three feature cards", () => {
+  it("renders the mockup and CTA sections", () => {
     render(<HomePage />);
-    expect(screen.getByText("AI 知识协同")).toBeInTheDocument();
-    expect(screen.getByText("实时协作编辑")).toBeInTheDocument();
-    expect(screen.getByText("知识库联动")).toBeInTheDocument();
+
+    expect(
+      screen.getByText("DocVault 产品发布协作方案"),
+    ).toBeInTheDocument();
+    expect(screen.getByText("本次发布重点")).toBeInTheDocument();
+    expect(screen.getByText("AI Panel")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", {
+        level: 2,
+        name: "立即开始，提升你的文档协作效率",
+      }),
+    ).toBeInTheDocument();
   });
 
-  it("should render CTA button", () => {
+  it("renders the required navigation and CTA links", () => {
     render(<HomePage />);
-    expect(screen.getByRole("button", { name: /开始使用/i })).toBeInTheDocument();
-  });
 
-  it("should navigate to /home/cloud-docs on CTA click", async () => {
-    const user = userEvent.setup();
-    render(<HomePage />);
-    await user.click(screen.getByRole("button"));
-    expect(mockPush).toHaveBeenCalledWith("/home/cloud-docs");
-  });
+    expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute(
+      "href",
+      "/auth/signin",
+    );
+    expect(screen.getByRole("link", { name: "Get Started" })).toHaveAttribute(
+      "href",
+      "/home/cloud-docs",
+    );
 
-  it("should render feature card descriptions", () => {
-    render(<HomePage />);
-    expect(screen.getByText(/创作 — 沉淀 — 复用/)).toBeInTheDocument();
-    expect(screen.getByText(/Yjs CRDT/)).toBeInTheDocument();
-    expect(screen.getByText(/RAG/)).toBeInTheDocument();
+    const startLinks = screen.getAllByRole("link", { name: /开始使用/ });
+    expect(startLinks).toHaveLength(1);
+    expect(startLinks[0]).toHaveAttribute("href", "/home/cloud-docs");
   });
 });

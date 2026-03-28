@@ -1,46 +1,85 @@
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@200;300;400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
 
-/* Dark mode colors */
-.dark {
-  --color-bg: rgb(15, 23, 42);
-  --color-surface: rgb(30, 41, 59);
-  --color-text: rgb(226, 232, 240);
-  --color-border: rgb(51, 65, 85);
+:root {
+  --font-sans: "Manrope", "DM Sans", system-ui, sans-serif;
+  --font-display: "Space Grotesk", "Manrope", system-ui, sans-serif;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+.marketing-shell {
+  min-height: 100vh;
+  color: #0f172a;
+  font-family: var(--font-sans);
+  background:
+    radial-gradient(circle at top left, rgba(191, 219, 254, 0.64), transparent 24%),
+    radial-gradient(circle at 88% 12%, rgba(129, 140, 248, 0.18), transparent 22%),
+    linear-gradient(180deg, #fbfcff 0%, #ffffff 24%, #f5f7ff 62%, #edf2ff 100%);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.landing-noise {
+  background:
+    radial-gradient(circle at 1px 1px, rgba(148, 163, 184, 0.14) 1px, transparent 0),
+    linear-gradient(180deg, rgba(248, 250, 255, 0.9), rgba(236, 243, 255, 0.4));
+  background-size: 28px 28px, 100% 100%;
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent 92%);
+}
+
+.landing-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+  background-size: 96px 96px;
+  background-position: center;
 }
 
 /* 针对 Tiptap 生成的 .ProseMirror 元素 */
 .ProseMirror:focus {
-	outline: none;
+  outline: none;
 }
+
 .ProseMirror h1 {
-	@apply text-3xl font-bold mt-12;
+  @apply mt-12 text-3xl font-bold;
 }
 
 .ProseMirror h2 {
-	@apply text-2xl font-bold mt-12;
+  @apply mt-12 text-2xl font-bold;
 }
 
 .ProseMirror h3 {
-	@apply text-xl font-bold mt-12;
+  @apply mt-12 text-xl font-bold;
 }
 
 .ProseMirror h4 {
-	@apply text-lg font-bold mt-8;
+  @apply mt-8 text-lg font-bold;
 }
 
 .ProseMirror h5 {
-	@apply text-base font-bold mt-8;
+  @apply mt-8 text-base font-bold;
 }
 
 .ProseMirror h6 {
-	@apply text-sm font-bold mt-8;
+  @apply mt-8 text-sm font-bold;
 }
+
 .ProseMirror ol {
-	list-style-type: decimal;
+  list-style-type: decimal;
 }
+
 .ProseMirror ul {
-	list-style-type: disc;
+  list-style-type: disc;
 }
