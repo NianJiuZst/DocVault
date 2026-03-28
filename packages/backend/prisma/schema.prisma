@@ -35,6 +35,7 @@ model Document {
   children     Document[]        @relation("DocumentTree")
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
+  searchVector Unsupported("tsvector")? // full-text search vector, managed via raw SQL trigger
 }
 
 model DocumentVersion {

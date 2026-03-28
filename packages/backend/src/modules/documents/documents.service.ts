@@ -272,15 +272,33 @@ export class DocumentsService {
 	}
 
 	async search(query: string, userId: number) {
-		return this.prisma.document.findMany({
-			where: {
-				userId,
-				OR: [{ title: { contains: query, mode: "insensitive" } }],
-			},
-			select: { id: true, title: true, createdAt: true, updatedAt: true },
-			orderBy: { updatedAt: "desc" },
-			take: 20,
-		});
+		// Sanitize: remove special tsquery characters to prevent injection
+		const sanitizedQuery = query.replace(/[():*&|!<>]/g, " ").trim();
+		if (!sanitizedQuery) {
+			return [];
+		}
+
+		// Use raw SQL for full-text search with tsvector
+		// $queryRawUnsafe for dynamic query construction with proper parameterization
+		const results = await this.prisma.$queryRawUnsafe<
+			{ id: number; title: string; createdAt: Date; updatedAt: Date }[]
+		>(
+			`SELECT id, title, "createdAt", "updatedAt"
+			FROM "Document"
+			WHERE "userId" = $1
+			  AND "searchVector" @@ plainto_tsquery('simple', $2)
+			ORDER BY ts_rank("searchVector", plainto_tsquery('simple', $2)) DESC
+			LIMIT 20`,
+			userId,
+			sanitizedQuery,
+		);
+
+		return results.map((doc) => ({
+			id: doc.id,
+			title: doc.title,
+			createdAt: doc.createdAt.toISOString(),
+			updatedAt: doc.updatedAt.toISOString(),
+		}));
 	}
 
 	async findSharedWithUser(userId: number) {
