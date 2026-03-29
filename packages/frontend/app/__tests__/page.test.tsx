@@ -28,52 +28,31 @@ describe("HomePage", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByRole("heading", { level: 1, name: "DocVault" }),
+      screen.getByRole("heading", { level: 1 }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "现代化协同文档编辑器，内置 AI Agent 与 RAG 知识库关联功能",
-      ),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Your Entire Workspace/)).toBeInTheDocument();
   });
 
-  it("renders the main feature sections", () => {
+  it("renders the features section", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByRole("heading", { level: 3, name: "编辑器" }),
+      screen.getByRole("heading", { name: "Engineered for Focus" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 3, name: "协作编辑" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 3, name: "知识库" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 3, name: "模板" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { level: 3, name: "导入导出" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("The Ultimate Editor")).toBeInTheDocument();
+    expect(screen.getByText("AI Knowledge Engine (RAG)")).toBeInTheDocument();
+    expect(screen.getByText("Infinite Extensibility")).toBeInTheDocument();
   });
 
-  it("renders the mockup and CTA sections", () => {
+  it("renders the CTA section", () => {
     render(<HomePage />);
 
     expect(
-      screen.getByText("DocVault 产品发布协作方案"),
-    ).toBeInTheDocument();
-    expect(screen.getByText("本次发布重点")).toBeInTheDocument();
-    expect(screen.getByText("AI Panel")).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", {
-        level: 2,
-        name: "立即开始，提升你的文档协作效率",
-      }),
+      screen.getByText("Ready to transform your productivity?"),
     ).toBeInTheDocument();
   });
 
-  it("renders the required navigation and CTA links", () => {
+  it("renders navigation links", () => {
     render(<HomePage />);
 
     expect(screen.getByRole("link", { name: "Sign In" })).toHaveAttribute(
@@ -84,9 +63,8 @@ describe("HomePage", () => {
       "href",
       "/home/cloud-docs",
     );
-
-    const startLinks = screen.getAllByRole("link", { name: /开始使用/ });
-    expect(startLinks).toHaveLength(1);
-    expect(startLinks[0]).toHaveAttribute("href", "/home/cloud-docs");
+    expect(
+      screen.getByRole("link", { name: "Start Writing for Free" }),
+    ).toHaveAttribute("href", "/home/cloud-docs");
   });
 });
