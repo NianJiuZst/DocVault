@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { MdDatabase, MdAdd, MdSearch } from "react-icons/md";
+import { MdLibraryBooks, MdAdd, MdSearch } from "react-icons/md";
 
 const SAMPLE_ITEMS = [
   { id: 1, title: "Product Requirements 2024", updatedAt: "2 hours ago", count: 12 },
@@ -101,7 +101,7 @@ export default function KnowledgeBasePage() {
                   className="w-10 h-10 rounded-xl flex items-center justify-center"
                   style={{ background: "#f2f3ff" }}
                 >
-                  <MdDatabase size={20} style={{ color: "#0043b5" }} />
+                  <MdLibraryBooks size={20} style={{ color: "#0043b5" }} />
                 </div>
                 <div>
                   <p className="font-semibold text-sm" style={{ color: "#131b2e" }}>
