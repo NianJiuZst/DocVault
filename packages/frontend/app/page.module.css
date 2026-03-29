@@ -57,6 +57,7 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--on-bg);
+  margin-right: auto;
 }
 
 .navLinks {
@@ -686,7 +687,8 @@
 
 .featuresGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
   gap: 1.5rem;
 }
 
@@ -694,11 +696,17 @@
   .featuresGrid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .featureCardWide {
+    grid-column: span 2;
+  }
 }
 
 @media (max-width: 640px) {
   .featuresGrid {
     grid-template-columns: 1fr;
+  }
+  .featureCardWide {
+    grid-column: span 1;
   }
 }
 
@@ -711,19 +719,7 @@
 }
 
 .featureCardWide {
-  grid-column: span 4;
-}
-
-@media (max-width: 1024px) {
-  .featureCardWide {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 640px) {
-  .featureCardWide {
-    grid-column: span 1;
-  }
+  grid-column: span 2;
 }
 
 .featureCardLight {
