@@ -7,7 +7,7 @@ import { ThemeProvider, useTheme } from "@/src/theme/ThemeProvider";
 import { FiSun } from "react-icons/fi";
 import { BsMoon } from "react-icons/bs";
 import SearchBar from "../../components/SearchBar";
-import TemplateSelectorModal from "../cloud-docs/components/TemplateSelectorModal";
+import TemplateSelectorModal from "./cloud-docs/components/TemplateSelectorModal";
 import {
   MdSpaceDashboard,
   MdLibraryBooks,
