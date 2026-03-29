@@ -62,16 +62,25 @@ function FolderTreeInline({
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
+  const [moreMenuId, setMoreMenuId] = useState<number | null>(null);
   const [creatingFolder, setCreatingFolder] = useState(false);
   const [creatingDoc, setCreatingDoc] = useState(false);
-  const [newFolderName, setNewFolderName] = useState("");
-  const [newDocName, setNewDocName] = useState("");
+  const [creatingForFolderId, setCreatingForFolderId] = useState<number | null>(null);
+  const [newItemName, setNewItemName] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     fetchTree();
   }, []);
+
+  // Close menu when clicking outside
+  useEffect(() => {
+    if (moreMenuId === null) return;
+    const handleClick = () => closeAll();
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, [moreMenuId]);
 
   const fetchTree = async () => {
     setLoading(true);
@@ -103,52 +112,109 @@ function FolderTreeInline({
     else router.push(`/home/cloud-docs/${id}`);
   };
 
-  const handleCreateFolder = async () => {
-    if (!newFolderName.trim()) return;
+  const openMoreMenu = (e: React.MouseEvent, id: number, isFolder: boolean) => {
+    e.stopPropagation();
+    if (!isFolder) return;
+    setMoreMenuId(moreMenuId === id ? null : id);
+    setCreatingFolder(false);
+    setCreatingDoc(false);
+    setCreatingForFolderId(null);
+  };
+
+  const closeAll = () => {
+    setMoreMenuId(null);
+    setCreatingFolder(false);
+    setCreatingDoc(false);
+    setCreatingForFolderId(null);
+    setNewItemName("");
+    setCreateError(null);
+  };
+
+  const handleCreateItem = async (isFolder: boolean, parentId?: number | null) => {
+    if (!newItemName.trim()) return;
     setCreateError(null);
     try {
-      const res = await fetch("http://localhost:3001/documents/folder", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title: newFolderName.trim() }),
-      });
-      if (!res.ok) throw new Error("Failed to create folder");
-      setNewFolderName("");
+      if (isFolder) {
+        const res = await fetch("http://localhost:3001/documents/folder", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ title: newItemName.trim() }),
+        });
+        if (!res.ok) throw new Error("Failed to create folder");
+      } else {
+        const body: { title: string; parentFolderId?: number } = { title: newItemName.trim() };
+        if (parentId) body.parentFolderId = parentId;
+        const res = await fetch("http://localhost:3001/documents/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(body),
+        });
+        if (!res.ok) throw new Error("Failed to create document");
+        const data = await res.json();
+        setNewItemName("");
+        setCreatingDoc(false);
+        setCreatingForFolderId(null);
+        fetchTree();
+        router.push(`/home/cloud-docs/${data.id}`);
+        return;
+      }
+      setNewItemName("");
       setCreatingFolder(false);
       fetchTree();
     } catch {
-      setCreateError("Failed to create folder, please try again");
+      setCreateError(isFolder ? "Failed to create folder" : "Failed to create document");
     }
   };
 
-  const handleCreateDoc = async () => {
-    if (!newDocName.trim()) return;
-    setCreateError(null);
-    try {
-      const res = await fetch("http://localhost:3001/documents/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ title: newDocName.trim() }),
-      });
-      if (!res.ok) throw new Error("Failed to create document");
-      const data = await res.json();
-      setNewDocName("");
-      setCreatingDoc(false);
-      fetchTree();
-      router.push(`/home/cloud-docs/${data.id}`);
-    } catch {
-      setCreateError("Failed to create document, please try again");
-    }
+  const startCreateFolder = (forFolderId?: number | null) => {
+    closeAll();
+    setCreatingFolder(true);
+    setCreatingForFolderId(forFolderId ?? null);
+    setMoreMenuId(null);
   };
 
-  const renderNode = (node: TreeNode, depth: number = 0) => {
+  const startCreateDoc = (forFolderId?: number | null) => {
+    closeAll();
+    setCreatingDoc(true);
+    setCreatingForFolderId(forFolderId ?? null);
+    setMoreMenuId(null);
+  };
+
+  // Root node representing the entire workspace
+  const rootNode: TreeNode = {
+    id: -1,
+    title: "My Workspace",
+    isFolder: true,
+    createdAt: "",
+    updatedAt: "",
+    children: tree,
+  };
+
+  const renderNode = (node: TreeNode, depth: number = 0, isRoot: boolean = false) => {
+    if (isRoot && node.id === -1) {
+      // Render root's children directly without showing root node
+      return (
+        <div key="root-children">
+          {node.children.length === 0 && !loading && (
+            <div className="text-xs text-center py-3 px-4" style={{ color: "#444653", opacity: 0.5 }}>
+              No files yet
+            </div>
+          )}
+          {node.children.map((child) => renderNode(child, 0))}
+        </div>
+      );
+    }
+
     const isExpanded = expanded.has(node.id);
+    const isMoreOpen = moreMenuId === node.id;
+    const isInlineCreating = creatingForFolderId === node.id && (creatingFolder || creatingDoc);
+
     return (
-      <div key={node.id}>
+      <div key={node.id} className="relative">
         <div
-          className="flex items-center gap-1.5 py-1.5 px-2 rounded-lg cursor-pointer group transition-colors hover:bg-white/40"
+          className="flex items-center gap-1 py-1 px-2 rounded-lg cursor-pointer group transition-colors hover:bg-white/40"
           style={{ paddingLeft: `${depth * 12 + 8}px` }}
           onClick={() =>
             node.isFolder ? toggleExpand(node.id) : handleDocClick(node.id)
@@ -165,12 +231,12 @@ function FolderTreeInline({
             </>
           ) : (
             <>
-              <span className="w-3" />
+              <span className="w-3 flex-shrink-0" />
               <MdDescription size={16} className="flex-shrink-0" style={{ color: "#0043b5" }} />
             </>
           )}
           <span
-            className="text-sm truncate"
+            className="text-sm truncate flex-1"
             style={{
               color: node.isFolder ? "#131b2e" : "#444653",
               fontWeight: node.isFolder ? 500 : 400,
@@ -179,8 +245,89 @@ function FolderTreeInline({
           >
             {node.title}
           </span>
+
+          {/* More button — only for folders */}
+          {node.isFolder && (
+            <button
+              onClick={(e) => openMoreMenu(e, node.id, true)}
+              className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
+              style={{ color: "#444653" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="12" cy="5" r="2" />
+                <circle cx="12" cy="12" r="2" />
+                <circle cx="12" cy="19" r="2" />
+              </svg>
+            </button>
+          )}
         </div>
 
+        {/* More dropdown menu */}
+        {isMoreOpen && (
+          <div
+            className="absolute right-2 top-full z-50 mt-1 py-1 rounded-xl shadow-lg min-w-[120px]"
+            style={{ background: "#ffffff", border: "1px solid rgba(195,198,215,0.3)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => startCreateFolder(node.id)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-gray-50 transition-colors"
+              style={{ color: "#131b2e" }}
+            >
+              <MdAdd size={14} />
+              <span>New Folder</span>
+            </button>
+            <button
+              onClick={() => startCreateDoc(node.id)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-gray-50 transition-colors"
+              style={{ color: "#131b2e" }}
+            >
+              <MdAdd size={14} />
+              <span>New Document</span>
+            </button>
+          </div>
+        )}
+
+        {/* Inline creation form */}
+        {isInlineCreating && (
+          <div
+            className="mx-2 my-1 p-2 rounded-xl"
+            style={{ background: "rgba(255,255,255,0.9)" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <input
+              autoFocus
+              value={newItemName}
+              onChange={(e) => setNewItemName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleCreateItem(creatingFolder, creatingForFolderId);
+                if (e.key === "Escape") closeAll();
+              }}
+              placeholder={creatingFolder ? "Folder name" : "Document name"}
+              className="w-full text-xs px-2 py-1.5 rounded-lg border mb-1.5 outline-none"
+              style={{ borderColor: "rgba(195,198,215,0.3)", color: "#131b2e" }}
+            />
+            {createError && <p className="text-xs text-red-500 mb-1">{createError}</p>}
+            <div className="flex gap-1">
+              <button
+                onClick={() => handleCreateItem(creatingFolder, creatingForFolderId)}
+                className="text-xs px-2 py-1 rounded-lg text-white"
+                style={{ background: "#0043b5" }}
+              >
+                Create
+              </button>
+              <button
+                onClick={closeAll}
+                className="text-xs px-2 py-1 rounded-lg"
+                style={{ color: "#444653" }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Children */}
         {node.isFolder && isExpanded && node.children.length > 0 && (
           <div>
             {node.children.map((child) => renderNode(child, depth + 1))}
@@ -191,17 +338,28 @@ function FolderTreeInline({
   };
 
   return (
-    <div className="py-2">
-      {/* Create folder / doc inline */}
-      {(creatingFolder || creatingDoc) && (
-        <div className="px-3 py-2 mx-2 mb-2 rounded-xl" style={{ background: "rgba(255,255,255,0.7)" }}>
+    <div className="py-2" onClick={closeAll}>
+      {/* Loading */}
+      {loading && (
+        <div className="text-xs text-center py-3" style={{ color: "#444653", opacity: 0.5 }}>
+          Loading...
+        </div>
+      )}
+
+      {/* Root-level inline creation */}
+      {!loading && (creatingFolder || creatingDoc) && creatingForFolderId === null && (
+        <div
+          className="mx-2 mb-2 p-2 rounded-xl"
+          style={{ background: "rgba(255,255,255,0.9)" }}
+          onClick={(e) => e.stopPropagation()}
+        >
           <input
             autoFocus
-            value={creatingFolder ? newFolderName : newDocName}
-            onChange={(e) => creatingFolder ? setNewFolderName(e.target.value) : setNewDocName(e.target.value)}
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") creatingFolder ? handleCreateFolder() : handleCreateDoc();
-              if (e.key === "Escape") { setCreatingFolder(false); setCreatingDoc(false); }
+              if (e.key === "Enter") handleCreateItem(creatingFolder, null);
+              if (e.key === "Escape") closeAll();
             }}
             placeholder={creatingFolder ? "Folder name" : "Document name"}
             className="w-full text-xs px-2 py-1.5 rounded-lg border mb-1.5 outline-none"
@@ -210,14 +368,14 @@ function FolderTreeInline({
           {createError && <p className="text-xs text-red-500 mb-1">{createError}</p>}
           <div className="flex gap-1">
             <button
-              onClick={creatingFolder ? handleCreateFolder : handleCreateDoc}
+              onClick={() => handleCreateItem(creatingFolder, null)}
               className="text-xs px-2 py-1 rounded-lg text-white"
               style={{ background: "#0043b5" }}
             >
               Create
             </button>
             <button
-              onClick={() => { setCreatingFolder(false); setCreatingDoc(false); }}
+              onClick={closeAll}
               className="text-xs px-2 py-1 rounded-lg"
               style={{ color: "#444653" }}
             >
@@ -227,39 +385,31 @@ function FolderTreeInline({
         </div>
       )}
 
-      {/* Tree */}
-      <div className="px-2">
-        {loading ? (
-          <div className="text-xs text-center py-3" style={{ color: "#444653", opacity: 0.5 }}>
-            Loading...
-          </div>
-        ) : tree.length === 0 ? (
-          <div className="text-xs text-center py-3 px-4" style={{ color: "#444653", opacity: 0.5 }}>
-            No files yet
-          </div>
-        ) : (
-          tree.map((node) => renderNode(node))
-        )}
-      </div>
+      {/* Root level "New" buttons */}
+      {!loading && creatingForFolderId === null && !creatingFolder && !creatingDoc && (
+        <div className="flex gap-1 px-3 mt-1">
+          <button
+            onClick={(e) => { e.stopPropagation(); startCreateFolder(null); }}
+            className="flex items-center gap-1.5 flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/30"
+            style={{ color: "#444653" }}
+          >
+            <MdAdd size={12} />
+            <span>Folder</span>
+          </button>
+          <button
+            onClick={(e) => { e.stopPropagation(); startCreateDoc(null); }}
+            className="flex items-center gap-1.5 flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/30"
+            style={{ color: "#444653" }}
+          >
+            <MdAdd size={12} />
+            <span>Doc</span>
+          </button>
+        </div>
+      )}
 
-      {/* New folder + New document buttons */}
-      <div className="flex gap-1 px-3 mt-1">
-        <button
-          onClick={() => { setCreatingFolder(true); setCreatingDoc(false); setNewFolderName(""); }}
-          className="flex items-center gap-1.5 flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/30"
-          style={{ color: "#444653" }}
-        >
-          <MdAdd size={12} />
-          <span>Folder</span>
-        </button>
-        <button
-          onClick={() => { setCreatingDoc(true); setCreatingFolder(false); setNewDocName(""); }}
-          className="flex items-center gap-1.5 flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/30"
-          style={{ color: "#444653" }}
-        >
-          <MdAdd size={12} />
-          <span>Doc</span>
-        </button>
+      {/* Tree */}
+      <div className="px-2 mt-1" onClick={(e) => e.stopPropagation()}>
+        {renderNode(rootNode, 0, true)}
       </div>
     </div>
   );
