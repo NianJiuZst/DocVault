@@ -1,65 +1,64 @@
 import Link from "next/link";
+import {
+  MdEditNote,
+  MdPlayCircle,
+  MdFolderOpen,
+  MdDescription,
+  MdStorage,
+  MdFormatQuote,
+  MdAutoAwesome,
+  MdPsychology,
+  MdCheckCircle,
+  MdLanguage,
+  MdChat,
+  MdExtension,
+  MdPalette,
+  MdLock,
+} from "react-icons/md";
 import styles from "./page.module.css";
 
-const FEATURE_CARDS = [
+const FEATURES = [
   {
-    span: "col-span-4",
     theme: "light",
-    icon: "edit_note",
+    icon: <MdEditNote size={24} />,
     title: "The Ultimate Editor",
     description:
       "A block-based rich text editor with markdown support and live collaboration. Drag, drop, and nest content effortlessly.",
-    cta: "Start Writing",
-    image: "https://lh3.googleusercontent.com/aida-public/AB6AXuBfEVkwbnL54tNAI9v_22I0bFb7OtTIDBroUCW2-9JbKMg2EYrVqnvIl_jbD_tTeEeZTXWvneXgL1WRB0U0QWqk4DW1iN8kgzM7vwSWi9EAeoInTo1ZroyV4aqNXhPWaw--WQ0DYkPIJIUtRtr6qWpOCSY3L9M7DfkCRQvQ16CR6iEi7lp2JHAoBDl7LUpPNiCgzRS7vQ59dje3c7DPxz9-i8a-Qmb6MIQTuDCrUhohG9rdsaEtCHn5AybzGkDxyoDtDgwBN5VCKgs",
-    imageAlt: "Minimalist code editor interface",
+    image:
+      "https://lh3.googleusercontent.com/aida-public/AB6AXuBfEVkwbnL54tNAI9v_22I0bFb7OtTIDBroUCW2-9JbKMg2EYrVqnvIl_jbD_tTeEeZTXWvneXgL1WRB0U0QWqk4DW1iN8kgzM7vwSWi9EAeoInTo1ZroyV4aqNXhPWaw--WQ0DYkPIJIUtRtr6qWpOCSY3L9M7DfkCRQvQ16CR6iEi7lp2JHAoBDl7LUpPNiCgzRS7vQ59dje3c7DPxz9-i8a-Qmb6MIQTuDCrUhohG9rdsaEtCHn5AybzGkDxyoDtDgwBN5VCKgs",
+    imageAlt: "Minimalist code editor",
   },
   {
-    span: "col-span-2",
     theme: "primary",
-    icon: "neurology",
+    icon: <MdAutoAwesome size={24} />,
     title: "AI Knowledge Engine (RAG)",
     description:
       "Upload your PDFs and docs, and chat with your own private knowledge base. Secure, private, and lightning fast.",
     badge: "1.2k Documents Indexed",
-    badgeProgress: "3/4",
+    badgeProgress: "75%",
   },
   {
-    span: "col-span-2",
     theme: "light",
-    icon: "extension",
+    icon: <MdExtension size={24} />,
     title: "Infinite Extensibility",
     description:
       "A powerful plugin system to customize your workflow. Integrate with your favorite tools or build your own.",
   },
   {
-    span: "col-span-2",
     theme: "light",
-    icon: "palette",
+    icon: <MdPalette size={24} />,
     title: "Theme & Customization",
     description:
       "Beautiful dark and light modes with deeply personalized workspace themes that reflect your brand.",
   },
   {
-    span: "col-span-2",
     theme: "light",
-    icon: "lock",
+    icon: <MdLock size={24} />,
     title: "Persistence & Security",
     description:
       "End-to-end encrypted cloud storage with robust offline support. Your data is yours, always.",
   },
 ];
-
-function MaterialIcon({ name, filled = false }: { name: string; filled?: boolean }) {
-  const fill = filled ? "'FILL' 1" : "'FILL' 0";
-  return (
-    <span
-      className="material-symbols-outlined"
-      style={{ fontVariationSettings: `${fill}, 'wght' 400, 'GRAD' 0, 'opsz' 24` }}
-    >
-      {name}
-    </span>
-  );
-}
 
 export default function HomePage() {
   return (
@@ -111,14 +110,13 @@ export default function HomePage() {
                 Start Writing for Free
               </Link>
               <a href="#product" className={styles.heroBtnSecondary}>
-                <MaterialIcon name="play_circle" />
+                <MdPlayCircle size={20} />
                 Watch Demo
               </a>
             </div>
 
             {/* Hero Mockup */}
             <div className={styles.mockupWrapper}>
-              {/* Background glows */}
               <div className={styles.mockupGlowPrimary} />
               <div className={styles.mockupGlowSecondary} />
 
@@ -136,16 +134,16 @@ export default function HomePage() {
                     <div className={styles.mockupSidebarSection}>
                       <p className={styles.mockupSidebarLabel}>Knowledge Base</p>
                       <div className={styles.mockupFolderItem}>
-                        <MaterialIcon name="folder_open" />
+                        <MdFolderOpen size={16} />
                         <span>Project Lumina</span>
                       </div>
                       <div className={styles.mockupFileList}>
                         <div className={styles.mockupFileItem}>
-                          <MaterialIcon name="description" />
+                          <MdDescription size={14} />
                           <span className={styles.mockupFileSkeleton} />
                         </div>
                         <div className={styles.mockupFileItem}>
-                          <MaterialIcon name="description" />
+                          <MdDescription size={14} />
                           <span className={styles.mockupFileSkeletonShort} />
                         </div>
                       </div>
@@ -154,7 +152,7 @@ export default function HomePage() {
                     <div className={styles.mockupSidebarSection}>
                       <p className={styles.mockupSidebarLabel}>Connected Data</p>
                       <div className={styles.mockupDbItem}>
-                        <MaterialIcon name="database" />
+                        <MdStorage size={14} />
                         <span className={styles.mockupFileSkeletonLong} />
                       </div>
                     </div>
@@ -171,9 +169,8 @@ export default function HomePage() {
                       <div className={styles.mockupTextLineShort} />
                     </div>
 
-                    {/* Block quote */}
                     <div className={styles.mockupBlockquote}>
-                      <MaterialIcon name="format_quote" />
+                      <MdFormatQuote size={20} />
                       <div className={styles.mockupBlockquoteLines}>
                         <div className={styles.mockupTextLine} />
                         <div className={styles.mockupTextLineShort} />
@@ -191,7 +188,7 @@ export default function HomePage() {
                 <div className={styles.aiBubble1}>
                   <div className={styles.aiBubble1Header}>
                     <div className={styles.aiBubble1Icon}>
-                      <MaterialIcon name="auto_awesome" filled />
+                      <MdAutoAwesome size={14} color="#fff" />
                     </div>
                     <span className={styles.aiBubble1Title}>Contextual Analysis</span>
                   </div>
@@ -208,7 +205,7 @@ export default function HomePage() {
 
                 <div className={styles.aiBubble2}>
                   <div className={styles.aiBubble2Header}>
-                    <MaterialIcon name="psychology" />
+                    <MdPsychology size={16} />
                     <span>Knowledge Map</span>
                   </div>
                   <div className={styles.aiBubble2Bars}>
@@ -236,43 +233,51 @@ export default function HomePage() {
             </div>
 
             <div className={styles.featuresGrid}>
-              {FEATURE_CARDS.map((card) => (
-                <article
-                  key={card.title}
-                  className={`${styles.featureCard} ${
-                    card.theme === "primary"
-                      ? styles.featureCardPrimary
-                      : styles.featureCardLight
-                  } ${card.span === "col-span-4" ? styles.featureCardWide : ""}`}
-                >
-                  <div className={styles.featureCardIconWrap}>
-                    <MaterialIcon name={card.icon} />
+              {/* First row: wide card + narrow primary card */}
+              <article className={`${styles.featureCard} ${styles.featureCardLight} ${styles.featureCardWide}`}>
+                <div className={styles.featureCardIconWrap}>{FEATURES[0].icon}</div>
+                <h3 className={styles.featureCardTitle}>{FEATURES[0].title}</h3>
+                <p className={styles.featureCardDesc}>{FEATURES[0].description}</p>
+                <div className={styles.featureCardImageWrap}>
+                  <img
+                    alt={FEATURES[0].imageAlt}
+                    className={styles.featureCardImage}
+                    src={FEATURES[0].image}
+                  />
+                </div>
+              </article>
+
+              <article className={`${styles.featureCard} ${styles.featureCardPrimary}`}>
+                <div className={`${styles.featureCardIconWrap} ${styles.featureCardIconWrapPrimary}`}>
+                  {FEATURES[1].icon}
+                </div>
+                <h3 className={`${styles.featureCardTitle} ${styles.featureCardTitleLight}`}>
+                  {FEATURES[1].title}
+                </h3>
+                <p className={`${styles.featureCardDesc} ${styles.featureCardDescLight}`}>
+                  {FEATURES[1].description}
+                </p>
+                <div className={styles.featureCardBadge}>
+                  <MdCheckCircle size={14} />
+                  <span>{FEATURES[1].badge}</span>
+                  <div className={styles.featureCardProgress}>
+                    <div
+                      className={styles.featureCardProgressFill}
+                      style={{ width: FEATURES[1].badgeProgress }}
+                    />
                   </div>
-                  <h3 className={styles.featureCardTitle}>{card.title}</h3>
-                  <p className={styles.featureCardDesc}>{card.description}</p>
+                </div>
+              </article>
 
-                  {card.image && (
-                    <div className={styles.featureCardImageWrap}>
-                      <img
-                        alt={card.imageAlt}
-                        className={styles.featureCardImage}
-                        src={card.image}
-                      />
-                    </div>
-                  )}
-
-                  {card.theme === "primary" && card.badge && (
-                    <div className={styles.featureCardBadge}>
-                      <MaterialIcon name="check_circle" />
-                      <span>{card.badge}</span>
-                      <div className={styles.featureCardProgress}>
-                        <div
-                          className={styles.featureCardProgressFill}
-                          style={{ width: card.badgeProgress }}
-                        />
-                      </div>
-                    </div>
-                  )}
+              {/* Second row: 3 narrow cards */}
+              {FEATURES.slice(2).map((feature) => (
+                <article
+                  key={feature.title}
+                  className={`${styles.featureCard} ${styles.featureCardLight}`}
+                >
+                  <div className={styles.featureCardIconWrap}>{feature.icon}</div>
+                  <h3 className={styles.featureCardTitle}>{feature.title}</h3>
+                  <p className={styles.featureCardDesc}>{feature.description}</p>
                 </article>
               ))}
             </div>
@@ -317,7 +322,7 @@ export default function HomePage() {
           <div className={styles.footerBrand}>
             <span className={styles.footerLogo}>DocVault</span>
             <p className={styles.footerTagline}>
-              © 2024 DocVault. Crafted for the editorial mind.
+              © 2026 DocVault. Crafted for the editorial mind.
             </p>
           </div>
 
@@ -331,10 +336,10 @@ export default function HomePage() {
 
           <div className={styles.footerSocial}>
             <button className={styles.footerSocialBtn}>
-              <MaterialIcon name="language" />
+              <MdLanguage size={16} />
             </button>
             <button className={styles.footerSocialBtn}>
-              <MaterialIcon name="chat" />
+              <MdChat size={16} />
             </button>
           </div>
         </div>
