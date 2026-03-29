@@ -230,7 +230,7 @@ describe('DocumentsController', () => {
       const created = { id: 2, title: 'Sub Folder', isFolder: true, parentId: 1 };
       mockDocumentsService.createFolder.mockResolvedValue(created);
 
-      await controller.createFolder({ title: 'Sub Folder', parentId: 1 }, mockReq as Request);
+      await controller.createFolder({ title: 'Sub Folder', parentFolderId: 1 }, mockReq as Request);
       expect(mockDocumentsService.createFolder).toHaveBeenCalledWith('Sub Folder', 1, 1);
     });
   });
