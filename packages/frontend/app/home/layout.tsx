@@ -1,7 +1,7 @@
 "use client";
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import { ThemeProvider, useTheme } from "@/src/theme/ThemeProvider";
 import { FiSun } from "react-icons/fi";
@@ -62,6 +62,7 @@ export default function HomeLayout({
   modal: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
@@ -186,7 +187,7 @@ export default function HomeLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top Header Bar */}
           <header
-            className="flex items-center justify-between px-8 flex-shrink-0"
+            className="flex items-center px-6 flex-shrink-0"
             style={{
               height: "4rem",
               background: "#faf8ff",
@@ -194,7 +195,7 @@ export default function HomeLayout({
             }}
           >
             {/* Breadcrumb - dynamic based on pathname */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-shrink-0">
               <span className="text-sm" style={{ color: "#444653", opacity: 0.6 }}>
                 {pathname === "/home/cloud-docs" || pathname.startsWith("/home/cloud-docs/")
                   ? "Workspace"
@@ -218,12 +219,21 @@ export default function HomeLayout({
               )}
             </div>
 
-            {/* Right side */}
-            <div className="flex items-center gap-4">
+            {/* Right side controls */}
+            <div className="flex items-center gap-3 ml-auto">
               {/* Search Bar */}
-              <div className="w-64">
+              <div className="w-56">
                 <SearchBar />
               </div>
+
+              {/* Share Button */}
+              <button
+                onClick={() => router.push(pathname + "?share=true")}
+                className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                style={{ background: "#145ae2", color: "#ffffff" }}
+              >
+                Share
+              </button>
 
               <ThemeToggle />
             </div>

@@ -1,5 +1,5 @@
 "use client";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { TextStyleKit } from "@tiptap/extension-text-style";
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -171,6 +171,7 @@ function getFilenameFromDisposition(
 export default function DocEditor() {
 	const params = useParams();
 	const router = useRouter();
+	const searchParams = useSearchParams();
 	const { user } = useAuth();
 	const docId = params.id as string;
 	const [docData, setDocData] = useState<DocumentDetails | null>(null);
@@ -367,6 +368,16 @@ export default function DocEditor() {
 			void fetchShares();
 		}
 	}, [shareDrawerOpen, canManageSharing, fetchShares]);
+
+	// Auto-open share drawer when ?share=true is in URL
+	useEffect(() => {
+		if (searchParams.get("share") === "true" && !shareDrawerOpen) {
+			setShareDrawerOpen(true);
+			// Clean the URL without reload
+			router.replace(window.location.pathname);
+		}
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [searchParams]);
 
 	const handleShare = useCallback(
 		async ({ userId, role }: { userId: number; role: ShareRole }) => {
