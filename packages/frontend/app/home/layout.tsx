@@ -222,7 +222,7 @@ export default function HomeLayout({
             {/* Right side controls */}
             <div className="flex items-center gap-3 ml-auto">
               {/* Search Bar */}
-              <div className="w-56">
+              <div className="w-56" style={{ marginRight: "30px" }}>
                 <SearchBar />
               </div>
 
