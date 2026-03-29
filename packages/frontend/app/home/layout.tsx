@@ -1,7 +1,7 @@
 "use client";
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
 import { ThemeProvider, useTheme } from "@/src/theme/ThemeProvider";
 import { FiSun } from "react-icons/fi";
@@ -62,6 +62,7 @@ export default function HomeLayout({
   modal: ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, logout } = useAuth();
   const [rightPanelOpen, setRightPanelOpen] = useState(true);
 
@@ -224,6 +225,15 @@ export default function HomeLayout({
               <div className="w-64">
                 <SearchBar />
               </div>
+
+              {/* Share Button */}
+              <button
+                onClick={() => router.push(pathname + "?share=true")}
+                className="px-4 py-2 rounded-xl text-sm font-semibold transition-all hover:opacity-90"
+                style={{ background: "#145ae2", color: "#ffffff" }}
+              >
+                Share
+              </button>
 
               <ThemeToggle />
             </div>
