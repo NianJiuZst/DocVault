@@ -7,4 +7,8 @@ export class CreateDocumentDto {
   @IsOptional()
   @IsObject()
   content?: object;
+
+  @IsOptional()
+  @IsNumber()
+  parentId?: number;
 }

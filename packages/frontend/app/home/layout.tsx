@@ -156,8 +156,8 @@ function FolderTreeInline({
         });
         if (!res.ok) throw new Error("Failed to create folder");
       } else {
-        const body: { title: string; parentFolderId?: number } = { title: newItemName.trim() };
-        if (parentId && parentId !== -1) body.parentFolderId = parentId;
+        const body: { title: string; parentId?: number } = { title: newItemName.trim() };
+        if (parentId && parentId !== -1) body.parentId = parentId;
         const res = await fetch("http://localhost:3001/documents/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
