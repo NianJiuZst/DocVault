@@ -63,7 +63,9 @@ function FolderTreeInline({
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(false);
   const [creatingFolder, setCreatingFolder] = useState(false);
+  const [creatingDoc, setCreatingDoc] = useState(false);
   const [newFolderName, setNewFolderName] = useState("");
+  const [newDocName, setNewDocName] = useState("");
   const [createError, setCreateError] = useState<string | null>(null);
   const router = useRouter();
 
@@ -120,6 +122,27 @@ function FolderTreeInline({
     }
   };
 
+  const handleCreateDoc = async () => {
+    if (!newDocName.trim()) return;
+    setCreateError(null);
+    try {
+      const res = await fetch("http://localhost:3001/documents/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ title: newDocName.trim() }),
+      });
+      if (!res.ok) throw new Error("Failed to create document");
+      const data = await res.json();
+      setNewDocName("");
+      setCreatingDoc(false);
+      fetchTree();
+      router.push(`/home/cloud-docs/${data.id}`);
+    } catch {
+      setCreateError("Failed to create document, please try again");
+    }
+  };
+
   const renderNode = (node: TreeNode, depth: number = 0) => {
     const isExpanded = expanded.has(node.id);
     return (
@@ -169,32 +192,32 @@ function FolderTreeInline({
 
   return (
     <div className="py-2">
-      {/* Create folder inline */}
-      {creatingFolder && (
+      {/* Create folder / doc inline */}
+      {(creatingFolder || creatingDoc) && (
         <div className="px-3 py-2 mx-2 mb-2 rounded-xl" style={{ background: "rgba(255,255,255,0.7)" }}>
           <input
             autoFocus
-            value={newFolderName}
-            onChange={(e) => setNewFolderName(e.target.value)}
+            value={creatingFolder ? newFolderName : newDocName}
+            onChange={(e) => creatingFolder ? setNewFolderName(e.target.value) : setNewDocName(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") handleCreateFolder();
-              if (e.key === "Escape") setCreatingFolder(false);
+              if (e.key === "Enter") creatingFolder ? handleCreateFolder() : handleCreateDoc();
+              if (e.key === "Escape") { setCreatingFolder(false); setCreatingDoc(false); }
             }}
-            placeholder="Folder name"
+            placeholder={creatingFolder ? "Folder name" : "Document name"}
             className="w-full text-xs px-2 py-1.5 rounded-lg border mb-1.5 outline-none"
             style={{ borderColor: "rgba(195,198,215,0.3)", color: "#131b2e" }}
           />
           {createError && <p className="text-xs text-red-500 mb-1">{createError}</p>}
           <div className="flex gap-1">
             <button
-              onClick={handleCreateFolder}
+              onClick={creatingFolder ? handleCreateFolder : handleCreateDoc}
               className="text-xs px-2 py-1 rounded-lg text-white"
               style={{ background: "#0043b5" }}
             >
               Create
             </button>
             <button
-              onClick={() => setCreatingFolder(false)}
+              onClick={() => { setCreatingFolder(false); setCreatingDoc(false); }}
               className="text-xs px-2 py-1 rounded-lg"
               style={{ color: "#444653" }}
             >
@@ -219,15 +242,25 @@ function FolderTreeInline({
         )}
       </div>
 
-      {/* New folder button */}
-      <button
-        onClick={() => { setCreatingFolder(true); setNewFolderName(""); }}
-        className="flex items-center gap-2 w-full px-3 py-1.5 mt-1 rounded-lg text-xs transition-colors hover:bg-white/30"
-        style={{ color: "#444653" }}
-      >
-        <MdAdd size={14} />
-        <span>New folder</span>
-      </button>
+      {/* New folder + New document buttons */}
+      <div className="flex gap-1 px-3 mt-1">
+        <button
+          onClick={() => { setCreatingFolder(true); setCreatingDoc(false); setNewFolderName(""); }}
+          className="flex items-center gap-1.5 flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/30"
+          style={{ color: "#444653" }}
+        >
+          <MdAdd size={12} />
+          <span>Folder</span>
+        </button>
+        <button
+          onClick={() => { setCreatingDoc(true); setCreatingFolder(false); setNewDocName(""); }}
+          className="flex items-center gap-1.5 flex-1 px-2 py-1.5 rounded-lg text-xs transition-colors hover:bg-white/30"
+          style={{ color: "#444653" }}
+        >
+          <MdAdd size={12} />
+          <span>Doc</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -399,17 +432,18 @@ export default function HomeLayout({
                         : { color: "#131b2e", opacity: 0.8 }
                     }
                   >
+                    <span className={item.active ? "text-[#3E5CCB]" : ""}>{item.icon}</span>
+                    <span
+                      className="flex-1"
+                      style={{ fontFamily: "Inter, sans-serif", fontSize: "0.875rem", fontWeight: item.active ? 700 : 500 }}
+                    >
+                      {item.label}
+                    </span>
                     <MdChevronRight
                       size={16}
                       className={`transition-transform flex-shrink-0 ${item.expanded ? "rotate-90" : ""}`}
                       style={{ color: item.active ? "#3E5CCB" : "#444653" }}
                     />
-                    <span className={item.active ? "text-[#3E5CCB]" : ""}>{item.icon}</span>
-                    <span
-                      style={{ fontFamily: "Inter, sans-serif", fontSize: "0.875rem", fontWeight: item.active ? 700 : 500 }}
-                    >
-                      {item.label}
-                    </span>
                   </button>
                 )}
 
