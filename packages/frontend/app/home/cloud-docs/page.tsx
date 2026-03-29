@@ -69,7 +69,7 @@ export default function CloudDocsPage() {
       setDocuments({ total: data.length, page: 1, pageSize: 50, items: data });
     } catch (err) {
       console.error(err);
-      setError("加载共享文档失败，请稍后重试");
+      setError("Failed to load shared documents, please try again later");
     } finally {
       setLoading(false);
     }
@@ -90,7 +90,7 @@ export default function CloudDocsPage() {
       setDocuments(data);
     } catch (err) {
       console.error(err);
-      setError("加载文档失败，请稍后重试");
+      setError("Failed to load documents, please try again later");
     } finally {
       setLoading(false);
     }
@@ -112,7 +112,7 @@ export default function CloudDocsPage() {
     try {
       let res: Response;
       if (template) {
-        // 基于模板创建文档
+        // Create document from template
         res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/templates/${template.id}/create-document`,
           {
@@ -123,14 +123,14 @@ export default function CloudDocsPage() {
           },
         );
       } else {
-        // 创建空白文档
+        // Create blank document
         res = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/documents/create`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             credentials: "include",
-            body: JSON.stringify({ title: "未命名文档" }),
+            body: JSON.stringify({ title: "Untitled Document" }),
           },
         );
       }
@@ -139,7 +139,7 @@ export default function CloudDocsPage() {
       router.push(`/home/cloud-docs/${doc.id}`);
     } catch (err) {
       console.error(err);
-      setError("创建文档失败，请稍后重试");
+      setError("Failed to create document, please try again later");
       setCreatingDoc(false);
     }
   };
@@ -149,7 +149,7 @@ export default function CloudDocsPage() {
     router.push(`/home/cloud-docs/${id}`);
   }, [router]);
 
-  /** 删除文档 */
+  /** Delete document */
   const handleDeleteDoc = useCallback(async (id: number) => {
     if (deletingDocId) return;
     setDeletingDocId(id);
@@ -167,7 +167,7 @@ export default function CloudDocsPage() {
       );
     } catch (err) {
       console.error(err);
-      setError("删除文档失败，请稍后重试");
+      setError("Failed to delete document, please try again later");
     } finally {
       setDeletingDocId(null);
     }
@@ -207,7 +207,7 @@ export default function CloudDocsPage() {
               className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5"
             >
               <VscNewFile className="h-5 w-5" />
-              <span>新建</span>
+              <span>New</span>
             </button>
             <button className="flex items-center gap-2 px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-all duration-200 shadow-md hover:shadow-lg transform hover:-translate-y-0.5">
               <IoCloudUploadOutline className="h-5 w-5" />
@@ -233,7 +233,7 @@ export default function CloudDocsPage() {
                     : "text-gray-500 hover:text-gray-900"
                 }`}
               >
-                <span>我的文档</span>
+                <span>My Documents</span>
               </button>
               <button
                 onClick={() => setActiveTab("shared")}
@@ -259,7 +259,7 @@ export default function CloudDocsPage() {
           </div>
 
           {loading ? (
-            <div className="text-center py-12 text-gray-500">加载中...</div>
+            <div className="text-center py-12 text-gray-500">Loading...</div>
           ) : error ? (
             <div className="text-center py-12 text-red-500">{error}</div>
           ) : documents && documents.items.length > 0 ? (
@@ -283,7 +283,7 @@ export default function CloudDocsPage() {
                       <div>
                         <h3 className="font-medium text-gray-900">{doc.title}</h3>
                         <p className="text-sm text-gray-500 mt-0.5">
-                          创建于 {formatDate(doc.createdAt)}
+                          Created {formatDate(doc.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -303,7 +303,7 @@ export default function CloudDocsPage() {
                       {activeTab !== "shared" && (
                         <button
                           type="button"
-                          title="删除文档"
+                          title="Delete document"
                           disabled={deletingDocId === doc.id}
                           onClick={(e) => {
                             e.stopPropagation();
@@ -328,7 +328,7 @@ export default function CloudDocsPage() {
             </div>
           ) : (
             <div className="text-center py-12 text-gray-400">
-              暂无文档，点击「新建」创建一个吧
+              No documents yet, click "New" to create one
             </div>
           )}
 
@@ -340,7 +340,7 @@ export default function CloudDocsPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>
-                <p className="text-sm text-gray-500">正在创建文档...</p>
+                <p className="text-sm text-gray-500">Creating document...</p>
               </div>
             </div>
           )}

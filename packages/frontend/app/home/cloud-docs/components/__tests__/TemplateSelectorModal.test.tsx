@@ -28,11 +28,11 @@ describe("TemplateSelectorModal", () => {
     expect(container.innerHTML).toBe("");
   });
 
-  it("打开时应渲染标题和空白文档选项", async () => {
+  it("Should render title and blank document option on open", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     render(<TemplateSelectorModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
     expect(screen.getByText("从模板创建")).toBeInTheDocument();
-    expect(screen.getByText("空白文档")).toBeInTheDocument();
+    expect(screen.getByText("Blank Document")).toBeInTheDocument();
     expect(screen.getByText("创建文档")).toBeInTheDocument();
   });
 
@@ -50,8 +50,8 @@ describe("TemplateSelectorModal", () => {
     );
   });
 
-  // ————— 核心场景：空白文档创建 —————
-  it("默认选中空白文档，点击创建应调用 onSelect(null)", async () => {
+  // /** Core scenario: blank document creation */
+  it("Default should be blank document, clicking create should call onSelect(null)", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     render(<TemplateSelectorModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
     await waitFor(() => {
@@ -81,16 +81,16 @@ describe("TemplateSelectorModal", () => {
     );
   });
 
-  it("选择模板后再切回空白文档，应调用 onSelect(null)", async () => {
+  it("Selecting template then switching back to blank should call onSelect(null)", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => fakeTemplates });
     render(<TemplateSelectorModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
     await waitFor(() => {
       expect(screen.getByText("周报模板")).toBeInTheDocument();
     });
 
-    // 先选模板，再切回空白文档
+    // Select template then switch back to blank document
     await userEvent.click(screen.getByText("周报模板"));
-    await userEvent.click(screen.getByText("空白文档"));
+    await userEvent.click(screen.getByText("Blank Document"));
     await userEvent.click(screen.getByText("创建文档"));
 
     expect(onSelect).toHaveBeenCalledWith(null);
@@ -129,7 +129,7 @@ describe("TemplateSelectorModal", () => {
     });
   });
 
-  it("模板加载失败时不崩溃，仍可创建空白文档", async () => {
+  it("Template load failure should not crash, blank document still creatable", async () => {
     mockFetch.mockRejectedValueOnce(new Error("Network error"));
     render(<TemplateSelectorModal isOpen={true} onClose={onClose} onSelect={onSelect} />);
     await waitFor(() => {
