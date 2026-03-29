@@ -57,6 +57,7 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   color: var(--on-bg);
+  margin-right: auto;
 }
 
 .navLinks {
@@ -167,8 +168,8 @@
   background: var(--surface-container-high);
   border-radius: 999px;
   font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--primary);
   margin-bottom: 2rem;
@@ -211,7 +212,7 @@
   gap: 1rem;
   margin-bottom: 4rem;
   width: 100%;
-  max-width: 28rem;
+  max-width: 40rem;
 }
 
 @media (min-width: 640px) {
@@ -226,7 +227,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem 2rem;
+  padding: 1rem 2.5rem;
   background: var(--primary);
   color: var(--on-primary);
   font-family: "Manrope", sans-serif;
@@ -236,6 +237,7 @@
   border-radius: 0.75rem;
   box-shadow: 0 8px 24px rgba(74, 85, 105, 0.3);
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .heroBtnPrimary:hover {
@@ -247,7 +249,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 1rem 2rem;
+  padding: 1rem 2.5rem;
   background: var(--surface-container-lowest);
   color: var(--primary);
   border: 1px solid rgba(195, 198, 215, 0.3);
@@ -257,6 +259,7 @@
   text-decoration: none;
   border-radius: 0.75rem;
   transition: all 0.2s;
+  white-space: nowrap;
 }
 
 .heroBtnSecondary:hover {
@@ -686,7 +689,8 @@
 
 .featuresGrid {
   display: grid;
-  grid-template-columns: repeat(6, 1fr);
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: auto auto;
   gap: 1.5rem;
 }
 
@@ -694,11 +698,17 @@
   .featuresGrid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .featureCardWide {
+    grid-column: span 2;
+  }
 }
 
 @media (max-width: 640px) {
   .featuresGrid {
     grid-template-columns: 1fr;
+  }
+  .featureCardWide {
+    grid-column: span 1;
   }
 }
 
@@ -711,19 +721,7 @@
 }
 
 .featureCardWide {
-  grid-column: span 4;
-}
-
-@media (max-width: 1024px) {
-  .featureCardWide {
-    grid-column: span 2;
-  }
-}
-
-@media (max-width: 640px) {
-  .featureCardWide {
-    grid-column: span 1;
-  }
+  grid-column: span 2;
 }
 
 .featureCardLight {

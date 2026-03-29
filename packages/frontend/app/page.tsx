@@ -86,12 +86,6 @@ export default function HomePage() {
         {/* Hero Section */}
         <section className={styles.hero}>
           <div className={styles.heroInner}>
-            {/* Badge */}
-            <div className={styles.heroBadge}>
-              <span className={styles.heroBadgeDot} />
-              <span>Now in Public Beta</span>
-            </div>
-
             {/* Headline */}
             <h1 className={styles.heroTitle}>
               Your Entire Workspace,{" "}
