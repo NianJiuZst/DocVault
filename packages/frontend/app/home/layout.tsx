@@ -10,7 +10,7 @@ import { FiSun } from "react-icons/fi";
 import { BsMoon } from "react-icons/bs";
 import {
   MdSpaceDashboard,
-  MdDatabase,
+  MdLibraryBooks,
   MdEditNote,
   MdGroup,
   MdExtension,
@@ -45,7 +45,7 @@ function ThemeToggle() {
 
 const NAV_ITEMS = [
   { icon: <MdSpaceDashboard size={20} />, label: "Workspace", href: "/home/cloud-docs" },
-  { icon: <MdDatabase size={20} />, label: "Knowledge Base", href: "/home/knowledge-base" },
+  { icon: <MdLibraryBooks size={20} />, label: "Knowledge Base", href: "/home/knowledge-base" },
   { icon: <MdEditNote size={20} />, label: "Personal Notes", href: "/home/notes" },
   { icon: <MdGroup size={20} />, label: "Shared Docs", href: "/home/shared" },
   { icon: <MdExtension size={20} />, label: "Plugins", href: "/home/plugins" },
