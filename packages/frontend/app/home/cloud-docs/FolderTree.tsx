@@ -78,7 +78,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
       setNewFolderParent(undefined);
       fetchTree();
     } catch {
-      setCreateError("创建文件夹失败，请重试");
+      setCreateError("Failed to create folder, please try again");
     }
   };
 
@@ -139,7 +139,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
             setNewFolderParent(undefined);
             setNewFolderName("");
           }}
-          title="新建文件夹"
+          title="New folder"
           className="w-6 h-6 flex items-center justify-center rounded hover:bg-gray-200 text-gray-500 hover:text-gray-700 transition-colors"
         >
           <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -159,7 +159,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
               if (e.key === "Enter") handleCreateFolder();
               if (e.key === "Escape") setCreatingFolder(false);
             }}
-            placeholder="文件夹名称"
+            placeholder="Folder name"
             className="w-full text-sm px-2 py-1 border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-1"
           />
           {createError && <p className="text-xs text-red-500 mb-1">{createError}</p>}

@@ -110,9 +110,9 @@ describe("FolderTree", () => {
   it("should show create folder form when + button clicked", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     render(<FolderTree />);
-    const addBtn = screen.getByTitle("新建文件夹");
+    const addBtn = screen.getByTitle("New folder");
     await userEvent.click(addBtn);
-    expect(screen.getByPlaceholderText("文件夹名称")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Folder name")).toBeInTheDocument();
   });
 
   it("should call POST /documents/folder and reload on creation", async () => {
@@ -120,10 +120,10 @@ describe("FolderTree", () => {
       .mockResolvedValueOnce({ ok: true, json: async () => [] }) // initial load
       .mockResolvedValueOnce({ ok: true, json: async () => [] }); // reload after create
     render(<FolderTree />);
-    const addBtn = screen.getByTitle("新建文件夹");
+    const addBtn = screen.getByTitle("New folder");
     await userEvent.click(addBtn);
-    const input = screen.getByPlaceholderText("文件夹名称");
-    await userEvent.type(input, "新建文件夹");
+    const input = screen.getByPlaceholderText("Folder name");
+    await userEvent.type(input, "Test Folder");
     await userEvent.click(screen.getByText("创建"));
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -136,10 +136,10 @@ describe("FolderTree", () => {
   it("should close create form on Escape", async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     render(<FolderTree />);
-    const addBtn = screen.getByTitle("新建文件夹");
+    const addBtn = screen.getByTitle("New folder");
     await userEvent.click(addBtn);
-    const input = screen.getByPlaceholderText("文件夹名称");
+    const input = screen.getByPlaceholderText("Folder name");
     await userEvent.type(input, "test{escape}");
-    expect(screen.queryByPlaceholderText("文件夹名称")).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText("Folder name")).not.toBeInTheDocument();
   });
 });

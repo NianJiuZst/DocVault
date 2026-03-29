@@ -192,7 +192,7 @@ export default function CloudDocsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex w-full">
+    <div className="flex flex-1 w-full">
       {/* Folder tree sidebar */}
       <div className="flex-shrink-0">
         <FolderTree onDocClick={handleDocClick} />
@@ -243,7 +243,7 @@ export default function CloudDocsPage() {
                     : "text-gray-500 hover:text-gray-900"
                 }`}
               >
-                <span>与我共享</span>
+                <span>Shared with me</span>
               </button>
               <button
                 onClick={() => setActiveTab("favorites")}
@@ -253,7 +253,7 @@ export default function CloudDocsPage() {
                     : "text-gray-500 hover:text-gray-900"
                 }`}
               >
-                <span>收藏</span>
+                <span>Favorites</span>
               </button>
             </div>
           </div>
@@ -332,7 +332,7 @@ export default function CloudDocsPage() {
             </div>
           )}
 
-          {/* 创建文档 loading 遮罩 */}
+          {/** Document creation loading overlay */}
           {creatingDoc && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3">
