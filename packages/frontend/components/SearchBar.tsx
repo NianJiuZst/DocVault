@@ -48,7 +48,7 @@ export default function SearchBar() {
       <input
         type="text"
         value={query}
-        placeholder="🔍 搜索文档..."
+        placeholder="Search documents..."
         className="w-full py-3 pl-12 pr-5 rounded-xl font-medium text-gray-800 placeholder-gray-500 transition-all duration-300 focus:ring-0"
         style={{
           backgroundColor: "rgb(255, 255, 255)",

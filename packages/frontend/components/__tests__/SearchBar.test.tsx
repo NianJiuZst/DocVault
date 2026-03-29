@@ -19,19 +19,19 @@ describe('SearchBar', () => {
 
   it('should render search input with correct placeholder', () => {
     render(<SearchBar />);
-    expect(screen.getByPlaceholderText('🔍 搜索文档...')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Search documents...')).toBeInTheDocument();
   });
 
   it('should update query on input change', async () => {
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search documents...') as HTMLInputElement;
     await userEvent.type(input, 'hello');
     expect(input.value).toBe('hello');
   });
 
   it('should not call fetch for empty query', async () => {
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search documents...') as HTMLInputElement;
     await userEvent.clear(input);
     expect(mockFetch).not.toHaveBeenCalled();
   });
@@ -43,7 +43,7 @@ describe('SearchBar', () => {
       json: async () => [{ id: 1, title: 'Doc A', createdAt: '2024-01-01', updatedAt: '2024-01-01' }],
     });
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...') as HTMLInputElement;
+    const input = screen.getByPlaceholderText('Search documents...') as HTMLInputElement;
     await userEvent.type(input, 'x');
     // Wait for results to appear
     await waitFor(() => expect(screen.getByText('Doc A')).toBeInTheDocument());
@@ -57,7 +57,7 @@ describe('SearchBar', () => {
   it('should call fetch API with encoded query param', async () => {
     mockFetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    const input = screen.getByPlaceholderText('Search documents...');
     await userEvent.type(input, 'x');
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -74,7 +74,7 @@ describe('SearchBar', () => {
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => mockResults });
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    const input = screen.getByPlaceholderText('Search documents...');
     await userEvent.type(input, 'doc');
     await waitFor(() => {
       expect(screen.getByText('Doc A')).toBeInTheDocument();
@@ -88,7 +88,7 @@ describe('SearchBar', () => {
     ];
     mockFetch.mockResolvedValue({ ok: true, json: async () => mockResults });
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    const input = screen.getByPlaceholderText('Search documents...');
     await userEvent.type(input, 'target');
     await waitFor(() => screen.getByText('Target Doc'));
     await userEvent.click(screen.getByText('Target Doc'));
@@ -98,7 +98,7 @@ describe('SearchBar', () => {
   it('should URL-encode special characters in query', async () => {
     mockFetch.mockResolvedValue({ ok: true, json: async () => [] });
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    const input = screen.getByPlaceholderText('Search documents...');
     await userEvent.type(input, 'hello world');
     await waitFor(() => {
       expect(mockFetch).toHaveBeenCalledWith(
@@ -111,7 +111,7 @@ describe('SearchBar', () => {
   it('should not navigate when fetch fails', async () => {
     mockFetch.mockRejectedValue(new Error('network error'));
     render(<SearchBar />);
-    const input = screen.getByPlaceholderText('🔍 搜索文档...');
+    const input = screen.getByPlaceholderText('Search documents...');
     await userEvent.type(input, 'fail');
     await waitFor(() => {
       expect(mockPush).not.toHaveBeenCalled();
