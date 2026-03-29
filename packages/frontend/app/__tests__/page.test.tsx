@@ -3,11 +3,6 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import HomePage from "../page";
 
-vi.mock("next/font/google", () => ({
-  Inter: () => ({ className: "mock-font", variable: "mock-font-inter" }),
-  Manrope: () => ({ className: "mock-font", variable: "mock-font-manrope" }),
-}));
-
 vi.mock("next/link", () => ({
   default: ({
     children,
