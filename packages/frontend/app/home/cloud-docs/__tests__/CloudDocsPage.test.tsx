@@ -79,7 +79,7 @@ describe("CloudDocsPage - 新建文档流程", () => {
     setupFetchMock();
   });
 
-  it("点击新建按钮应打开模板选择弹窗", async () => {
+  it("Clicking New button should open template selector modal", async () => {
     render(<CloudDocsPage />);
     await waitFor(() => {
       expect(screen.queryByText("加载中...")).not.toBeInTheDocument();
@@ -88,14 +88,14 @@ describe("CloudDocsPage - 新建文档流程", () => {
     // 弹窗默认关闭
     expect(screen.queryByTestId("template-modal")).not.toBeInTheDocument();
 
-    // 点击新建
-    await userEvent.click(screen.getByText("新建"));
+    // Click New
+    await userEvent.click(screen.getByText("New"));
 
     // 弹窗应打开
     expect(screen.getByTestId("template-modal")).toBeInTheDocument();
   });
 
-  it("选择空白文档应调用 /documents/create 并跳转", async () => {
+  it("Selecting blank document should call /documents/create and navigate", async () => {
     const createdDoc = { id: 99 };
     setupFetchMock({
       "/documents/create": { ok: true, json: async () => createdDoc } as Response,
@@ -106,7 +106,7 @@ describe("CloudDocsPage - 新建文档流程", () => {
       expect(screen.queryByText("加载中...")).not.toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText("新建"));
+    await userEvent.click(screen.getByText("New"));
     await userEvent.click(screen.getByTestId("select-blank"));
 
     await waitFor(() => {
@@ -114,14 +114,14 @@ describe("CloudDocsPage - 新建文档流程", () => {
         expect.stringContaining("/documents/create"),
         expect.objectContaining({
           method: "POST",
-          body: JSON.stringify({ title: "未命名文档" }),
+          body: JSON.stringify({ title: "Untitled Document" }),
         }),
       );
       expect(mockPush).toHaveBeenCalledWith("/home/cloud-docs/99");
     });
   });
 
-  it("选择模板应调用 /templates/:id/create-document 并跳转", async () => {
+  it("Selecting template should call /templates/:id/create-document and navigate", async () => {
     const createdDoc = { id: 88 };
     setupFetchMock({
       "/templates/": { ok: true, json: async () => createdDoc } as Response,
@@ -132,7 +132,7 @@ describe("CloudDocsPage - 新建文档流程", () => {
       expect(screen.queryByText("加载中...")).not.toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText("新建"));
+    await userEvent.click(screen.getByText("New"));
     await userEvent.click(screen.getByTestId("select-template"));
 
     await waitFor(() => {
@@ -147,7 +147,7 @@ describe("CloudDocsPage - 新建文档流程", () => {
     });
   });
 
-  it("创建文档失败应显示错误提示", async () => {
+  it("Creating document failure should show error message", async () => {
     setupFetchMock({
       "/documents/create": { ok: false, status: 500 } as Response,
     });
@@ -157,11 +157,11 @@ describe("CloudDocsPage - 新建文档流程", () => {
       expect(screen.queryByText("加载中...")).not.toBeInTheDocument();
     });
 
-    await userEvent.click(screen.getByText("新建"));
+    await userEvent.click(screen.getByText("New"));
     await userEvent.click(screen.getByTestId("select-blank"));
 
     await waitFor(() => {
-      expect(screen.getByText("创建文档失败，请稍后重试")).toBeInTheDocument();
+      expect(screen.getByText("Failed to create document, please try again later")).toBeInTheDocument();
     });
     // 不应跳转
     expect(mockPush).not.toHaveBeenCalled();

@@ -68,7 +68,7 @@ export default function TemplateSelectorModal({
     void fetchTemplates();
   }, [isOpen]);
 
-  /** 确认创建文档，selected 为 null 表示空白文档 */
+  /** 确认创建文档，selected 为 null 表示Blank Document */
   const handleConfirm = async () => {
     setCreating(true);
     await onSelect(selected);
@@ -113,7 +113,7 @@ export default function TemplateSelectorModal({
               <FiFileText className="h-6 w-6" />
             </div>
             <div>
-              <p className="font-medium text-slate-900">空白文档</p>
+              <p className="font-medium text-slate-900">Blank Document</p>
               <p className="text-sm text-slate-500">从空白页面开始</p>
             </div>
             {selected === null && (
