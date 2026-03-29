@@ -1,13 +1,12 @@
 "use client";
 import { type ReactNode, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useAuth } from "../components/AuthProvider";
-import avatarsrc from "@/src/image/deavatar.jpg";
 import { ThemeProvider, useTheme } from "@/src/theme/ThemeProvider";
 import { FiSun } from "react-icons/fi";
 import { BsMoon } from "react-icons/bs";
+import SearchBar from "../../components/SearchBar";
 import {
   MdSpaceDashboard,
   MdLibraryBooks,
@@ -187,54 +186,44 @@ export default function HomeLayout({
         <div className="flex-1 flex flex-col overflow-hidden">
           {/* Top Header Bar */}
           <header
-            className="flex items-center justify-between px-16 flex-shrink-0"
+            className="flex items-center justify-between px-8 flex-shrink-0"
             style={{
               height: "4rem",
               background: "#faf8ff",
               borderBottom: "1px solid rgba(195, 198, 215, 0.3)",
             }}
           >
-            {/* Breadcrumb */}
+            {/* Breadcrumb - dynamic based on pathname */}
             <div className="flex items-center gap-3">
-              <span className="text-sm" style={{ color: "#444653", opacity: 0.6 }}>Workspace</span>
-              <MdChevronRight size={14} style={{ opacity: 0.3 }} />
-              <span className="text-sm font-medium">Project Research & RAG Implementation</span>
+              <span className="text-sm" style={{ color: "#444653", opacity: 0.6 }}>
+                {pathname === "/home/cloud-docs" || pathname.startsWith("/home/cloud-docs/")
+                  ? "Workspace"
+                  : pathname.startsWith("/home/knowledge-base")
+                  ? "Knowledge Base"
+                  : pathname.startsWith("/home/notes")
+                  ? "Personal Notes"
+                  : pathname.startsWith("/home/shared")
+                  ? "Shared Docs"
+                  : pathname.startsWith("/home/plugins")
+                  ? "Plugins"
+                  : "Workspace"}
+              </span>
+              {pathname !== "/home/cloud-docs" && pathname !== "/home" && (
+                <>
+                  <MdChevronRight size={14} style={{ opacity: 0.3 }} />
+                  <span className="text-sm font-medium" style={{ color: "#131b2e" }}>
+                    {user?.name || "DocVault"}
+                  </span>
+                </>
+              )}
             </div>
 
             {/* Right side */}
             <div className="flex items-center gap-4">
-              {/* User Avatars */}
-              <div className="flex -space-x-2">
-                <div className="w-8 h-8 rounded-full border-2 border-white overflow-hidden relative">
-                  <Image src={avatarsrc} alt="User" fill style={{ objectFit: "cover" }} />
-                </div>
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-white overflow-hidden relative flex items-center justify-center text-xs font-bold"
-                  style={{ background: "#c3ccff", color: "#3b446e" }}
-                >
-                  AL
-                </div>
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-white overflow-hidden relative flex items-center justify-center text-xs font-bold"
-                  style={{ background: "#e9ddff", color: "#5516be" }}
-                >
-                  ZX
-                </div>
-                <div
-                  className="w-8 h-8 rounded-full border-2 border-white overflow-hidden relative flex items-center justify-center text-xs font-bold"
-                  style={{ background: "#d0bcff", color: "#23005c" }}
-                >
-                  +3
-                </div>
+              {/* Search Bar */}
+              <div className="w-64">
+                <SearchBar />
               </div>
-
-              {/* Share Button */}
-              <button
-                className="px-4 py-2 rounded-xl text-sm font-semibold transition-opacity"
-                style={{ background: "#145ae2", color: "#ffffff" }}
-              >
-                Share
-              </button>
 
               <ThemeToggle />
             </div>
