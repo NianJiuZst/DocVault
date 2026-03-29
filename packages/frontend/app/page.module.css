@@ -44,7 +44,6 @@
 
 .navInner {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   max-width: 80rem;
   margin: 0 auto;
