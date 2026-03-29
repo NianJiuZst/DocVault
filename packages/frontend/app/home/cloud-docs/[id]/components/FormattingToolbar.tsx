@@ -2,36 +2,47 @@
 
 import type { Editor } from "@tiptap/react";
 import { useEditorState } from "@tiptap/react";
+import {
+	MdFormatBold,
+	MdFormatItalic,
+	MdFormatStrikethrough,
+	MdCode,
+	MdTitle,
+	MdFormatListBulleted,
+	MdFormatListNumbered,
+	MdFormatQuote,
+	MdHorizontalRule,
+	MdUndo,
+	MdRedo,
+	MdTextFields,
+} from "react-icons/md";
 
 function ToolbarButton({
-	label,
+	icon,
 	onClick,
 	active = false,
 	disabled = false,
+	title,
 }: {
-	label: string;
+	icon: React.ReactNode;
 	onClick: () => void;
 	active?: boolean;
 	disabled?: boolean;
+	title: string;
 }) {
-	const className = [
-		"inline-flex min-h-9 items-center rounded-lg border px-3 text-sm font-medium transition-colors",
-		active
-			? "border-blue-600 bg-blue-600 text-white"
-			: "border-slate-200 bg-white text-slate-700 hover:bg-slate-50",
-		disabled ? "cursor-not-allowed opacity-50 hover:bg-white" : "",
-	]
-		.filter(Boolean)
-		.join(" ");
-
 	return (
 		<button
-			className={className}
-			disabled={disabled}
 			onClick={onClick}
+			disabled={disabled}
+			title={title}
 			type="button"
+			className={`w-8 h-8 flex items-center justify-center rounded transition-colors ${
+				active
+					? "bg-blue-100 text-blue-600"
+					: "text-gray-600 hover:bg-gray-100"
+			} ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
 		>
-			{label}
+			{icon}
 		</button>
 	);
 }
@@ -85,92 +96,102 @@ export default function FormattingToolbar({ editor }: { editor: Editor }) {
 	});
 
 	return (
-		<div className="flex flex-wrap gap-2">
+		<div className="flex items-center gap-0.5 flex-wrap">
 			<ToolbarButton
+				icon={<MdFormatBold size={16} />}
+				onClick={() => editor.chain().focus().toggleBold().run()}
 				active={editorState.isBold}
 				disabled={!editorState.canBold}
-				label="粗体"
-				onClick={() => editor.chain().focus().toggleBold().run()}
+				title="粗体"
 			/>
 			<ToolbarButton
+				icon={<MdFormatItalic size={16} />}
+				onClick={() => editor.chain().focus().toggleItalic().run()}
 				active={editorState.isItalic}
 				disabled={!editorState.canItalic}
-				label="斜体"
-				onClick={() => editor.chain().focus().toggleItalic().run()}
+				title="斜体"
 			/>
 			<ToolbarButton
+				icon={<MdFormatStrikethrough size={16} />}
+				onClick={() => editor.chain().focus().toggleStrike().run()}
 				active={editorState.isStrike}
 				disabled={!editorState.canStrike}
-				label="删除线"
-				onClick={() => editor.chain().focus().toggleStrike().run()}
+				title="删除线"
 			/>
 			<ToolbarButton
+				icon={<MdCode size={16} />}
+				onClick={() => editor.chain().focus().toggleCode().run()}
 				active={editorState.isCode}
 				disabled={!editorState.canCode}
-				label="行内代码"
-				onClick={() => editor.chain().focus().toggleCode().run()}
+				title="行内代码"
 			/>
+
+			<div className="w-px h-5 bg-gray-200 mx-1" />
+
 			<ToolbarButton
-				label="清除样式"
-				onClick={() => editor.chain().focus().unsetAllMarks().run()}
-			/>
-			<ToolbarButton
-				label="清除节点"
-				onClick={() => editor.chain().focus().clearNodes().run()}
-			/>
-			<ToolbarButton
-				active={editorState.isParagraph}
-				label="正文"
+				icon={<MdTextFields size={16} />}
 				onClick={() => editor.chain().focus().setParagraph().run()}
+				active={editorState.isParagraph}
+				title="正文"
 			/>
 			<ToolbarButton
-				active={editorState.isHeading1}
-				label="H1"
+				icon={<MdTitle size={16} style={{ fontSize: 18 }} />}
 				onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+				active={editorState.isHeading1}
+				title="标题1"
 			/>
 			<ToolbarButton
-				active={editorState.isHeading2}
-				label="H2"
+				icon={<MdTitle size={14} />}
 				onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+				active={editorState.isHeading2}
+				title="标题2"
 			/>
 			<ToolbarButton
-				active={editorState.isHeading3}
-				label="H3"
+				icon={<MdTitle size={12} />}
 				onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+				active={editorState.isHeading3}
+				title="标题3"
 			/>
+
+			<div className="w-px h-5 bg-gray-200 mx-1" />
+
 			<ToolbarButton
-				active={editorState.isBulletList}
-				label="无序列表"
+				icon={<MdFormatListBulleted size={16} />}
 				onClick={() => editor.chain().focus().toggleBulletList().run()}
+				active={editorState.isBulletList}
+				title="无序列表"
 			/>
 			<ToolbarButton
-				active={editorState.isOrderedList}
-				label="有序列表"
+				icon={<MdFormatListNumbered size={16} />}
 				onClick={() => editor.chain().focus().toggleOrderedList().run()}
+				active={editorState.isOrderedList}
+				title="有序列表"
 			/>
 			<ToolbarButton
-				active={editorState.isCodeBlock}
-				label="代码块"
-				onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-			/>
-			<ToolbarButton
-				active={editorState.isBlockquote}
-				label="引用"
+				icon={<MdFormatQuote size={16} />}
 				onClick={() => editor.chain().focus().toggleBlockquote().run()}
+				active={editorState.isBlockquote}
+				title="引用"
 			/>
 			<ToolbarButton
-				label="分割线"
+				icon={<MdHorizontalRule size={16} />}
 				onClick={() => editor.chain().focus().setHorizontalRule().run()}
+				title="分割线"
 			/>
+
+			<div className="w-px h-5 bg-gray-200 mx-1" />
+
 			<ToolbarButton
-				disabled={!editorState.canUndo}
-				label="撤销"
+				icon={<MdUndo size={16} />}
 				onClick={() => editor.chain().focus().undo().run()}
+				disabled={!editorState.canUndo}
+				title="撤销"
 			/>
 			<ToolbarButton
-				disabled={!editorState.canRedo}
-				label="重做"
+				icon={<MdRedo size={16} />}
 				onClick={() => editor.chain().focus().redo().run()}
+				disabled={!editorState.canRedo}
+				title="重做"
 			/>
 		</div>
 	);

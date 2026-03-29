@@ -112,9 +112,8 @@ function FolderTreeInline({
     else router.push(`/home/cloud-docs/${id}`);
   };
 
-  const openMoreMenu = (e: React.MouseEvent, id: number, isFolder: boolean) => {
+  const openMoreMenu = (e: React.MouseEvent, id: number, _isFolder: boolean) => {
     e.stopPropagation();
-    if (!isFolder) return;
     setMoreMenuId(moreMenuId === id ? null : id);
     setCreatingFolder(false);
     setCreatingDoc(false);
@@ -130,21 +129,35 @@ function FolderTreeInline({
     setCreateError(null);
   };
 
+  // Expand a folder and all its ancestor folders in the tree
+  const expandFolderAndAncestors = (folderId: number, nodes: TreeNode[], path: number[] = []): number[] => {
+    for (const node of nodes) {
+      if (node.id === folderId) return [...path];
+      if (node.children.length > 0) {
+        const found = expandFolderAndAncestors(folderId, node.children, [...path, node.id]);
+        if (found.length > 0) return found;
+      }
+    }
+    return [];
+  };
+
   const handleCreateItem = async (isFolder: boolean, parentId?: number | null) => {
     if (!newItemName.trim()) return;
     setCreateError(null);
     try {
       if (isFolder) {
+        const body: { title: string; parentFolderId?: number } = { title: newItemName.trim() };
+        if (parentId && parentId !== -1) body.parentFolderId = parentId;
         const res = await fetch("http://localhost:3001/documents/folder", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
-          body: JSON.stringify({ title: newItemName.trim() }),
+          body: JSON.stringify(body),
         });
         if (!res.ok) throw new Error("Failed to create folder");
       } else {
         const body: { title: string; parentFolderId?: number } = { title: newItemName.trim() };
-        if (parentId) body.parentFolderId = parentId;
+        if (parentId && parentId !== -1) body.parentFolderId = parentId;
         const res = await fetch("http://localhost:3001/documents/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -156,15 +169,60 @@ function FolderTreeInline({
         setNewItemName("");
         setCreatingDoc(false);
         setCreatingForFolderId(null);
-        fetchTree();
+        // Fetch fresh tree, then expand ancestors using the updated tree
+        await fetchTree();
+        if (parentId && parentId !== -1) {
+          // Use a synchronous tree state read via a separate fetch for accurate ancestors
+          const treeRes = await fetch("http://localhost:3001/documents/tree", { credentials: "include" });
+          if (treeRes.ok) {
+            const currentTree: TreeNode[] = await treeRes.json();
+            const ancestors = expandFolderAndAncestors(parentId, currentTree);
+            setExpanded((prev) => {
+              const next = new Set(prev);
+              for (const id of ancestors) next.add(id);
+              next.add(parentId);
+              return next;
+            });
+          }
+        }
         router.push(`/home/cloud-docs/${data.id}`);
         return;
       }
       setNewItemName("");
       setCreatingFolder(false);
+      if (parentId && parentId !== -1) {
+        const treeRes = await fetch("http://localhost:3001/documents/tree", { credentials: "include" });
+        if (treeRes.ok) {
+          const currentTree: TreeNode[] = await treeRes.json();
+          const ancestors = expandFolderAndAncestors(parentId, currentTree);
+          setExpanded((prev) => {
+            const next = new Set(prev);
+            for (const id of ancestors) next.add(id);
+            next.add(parentId);
+            return next;
+          });
+        }
+      }
       fetchTree();
     } catch {
       setCreateError(isFolder ? "Failed to create folder" : "Failed to create document");
+    }
+  };
+
+  const handleDeleteItem = async (id: number, isFolder: boolean) => {
+    try {
+      const endpoint = isFolder
+        ? `http://localhost:3001/documents/folder/${id}`
+        : `http://localhost:3001/documents/${id}`;
+      const res = await fetch(endpoint, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error("Failed to delete");
+      closeAll();
+      fetchTree();
+    } catch {
+      // Silently fail
     }
   };
 
@@ -246,26 +304,24 @@ function FolderTreeInline({
             {node.title}
           </span>
 
-          {/* More button — only for folders */}
-          {node.isFolder && (
-            <button
-              onClick={(e) => openMoreMenu(e, node.id, true)}
-              className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
-              style={{ color: "#444653" }}
-            >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
-                <circle cx="12" cy="5" r="2" />
-                <circle cx="12" cy="12" r="2" />
-                <circle cx="12" cy="19" r="2" />
-              </svg>
-            </button>
-          )}
+          {/* More button — for both folders and documents */}
+          <button
+            onClick={(e) => openMoreMenu(e, node.id, !!node.isFolder)}
+            className="opacity-0 group-hover:opacity-100 p-1 rounded transition-opacity"
+            style={{ color: "#444653" }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
         </div>
 
         {/* More dropdown menu */}
         {isMoreOpen && (
           <div
-            className="absolute right-2 top-full z-50 mt-1 py-1 rounded-xl shadow-lg min-w-[120px]"
+            className="absolute right-2 top-full z-50 mt-1 py-1 rounded-xl shadow-lg min-w-[140px]"
             style={{ background: "#ffffff", border: "1px solid rgba(195,198,215,0.3)" }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -284,6 +340,17 @@ function FolderTreeInline({
             >
               <MdAdd size={14} />
               <span>New Document</span>
+            </button>
+            <div className="my-1" style={{ borderTop: "1px solid rgba(195,198,215,0.2)" }} />
+            <button
+              onClick={() => handleDeleteItem(node.id, node.isFolder)}
+              className="w-full flex items-center gap-2 px-3 py-2 text-xs text-left hover:bg-red-50 transition-colors"
+              style={{ color: "#dc2626" }}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+              </svg>
+              <span>Delete {node.isFolder ? "Folder" : "Document"}</span>
             </button>
           </div>
         )}
