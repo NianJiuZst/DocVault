@@ -129,6 +129,18 @@ function FolderTreeInline({
     setCreateError(null);
   };
 
+  // Expand a folder and all its ancestor folders in the tree
+  const expandFolderAndAncestors = (folderId: number, nodes: TreeNode[], path: number[] = []): number[] => {
+    for (const node of nodes) {
+      if (node.id === folderId) return [...path];
+      if (node.children.length > 0) {
+        const found = expandFolderAndAncestors(folderId, node.children, [...path, node.id]);
+        if (found.length > 0) return found;
+      }
+    }
+    return [];
+  };
+
   const handleCreateItem = async (isFolder: boolean, parentId?: number | null) => {
     if (!newItemName.trim()) return;
     setCreateError(null);
@@ -157,19 +169,39 @@ function FolderTreeInline({
         setNewItemName("");
         setCreatingDoc(false);
         setCreatingForFolderId(null);
-        fetchTree();
-        // Expand parent folder so new doc is visible
+        // Fetch fresh tree, then expand ancestors using the updated tree
+        await fetchTree();
         if (parentId && parentId !== -1) {
-          setExpanded((prev) => new Set([...prev, parentId]));
+          // Use a synchronous tree state read via a separate fetch for accurate ancestors
+          const treeRes = await fetch("http://localhost:3001/documents/tree", { credentials: "include" });
+          if (treeRes.ok) {
+            const currentTree: TreeNode[] = await treeRes.json();
+            const ancestors = expandFolderAndAncestors(parentId, currentTree);
+            setExpanded((prev) => {
+              const next = new Set(prev);
+              for (const id of ancestors) next.add(id);
+              next.add(parentId);
+              return next;
+            });
+          }
         }
         router.push(`/home/cloud-docs/${data.id}`);
         return;
       }
       setNewItemName("");
       setCreatingFolder(false);
-      // Expand parent folder so new folder is visible
       if (parentId && parentId !== -1) {
-        setExpanded((prev) => new Set([...prev, parentId]));
+        const treeRes = await fetch("http://localhost:3001/documents/tree", { credentials: "include" });
+        if (treeRes.ok) {
+          const currentTree: TreeNode[] = await treeRes.json();
+          const ancestors = expandFolderAndAncestors(parentId, currentTree);
+          setExpanded((prev) => {
+            const next = new Set(prev);
+            for (const id of ancestors) next.add(id);
+            next.add(parentId);
+            return next;
+          });
+        }
       }
       fetchTree();
     } catch {
