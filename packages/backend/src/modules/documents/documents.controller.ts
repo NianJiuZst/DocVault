@@ -170,11 +170,11 @@ export class DocumentsController {
   @Post('folder')
   @UseGuards(AuthGuard)
   async createFolder(
-    @Body() body: { title: string; parentId?: number },
+    @Body() body: { title: string; parentFolderId?: number },
     @Req() req: Request,
   ) {
     const userId = (req as any)._user.userId;
-    return this.documentsService.createFolder(body.title, userId, body.parentId);
+    return this.documentsService.createFolder(body.title, userId, body.parentFolderId);
   }
 
   @Put(':id/move')

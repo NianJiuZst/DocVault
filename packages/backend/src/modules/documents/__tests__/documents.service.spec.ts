@@ -87,23 +87,34 @@ describe('DocumentsService', () => {
   // create
   // ──────────────────────────────────────────────
   describe('create', () => {
-    it('should create a document with default empty content', async () => {
+    it('should create a document with default empty content at root level', async () => {
       const dto = { title: 'New Doc' };
-      const mockCreated = { id: 1, title: 'New Doc', content: {}, userId: 1 };
+      const mockCreated = { id: 1, title: 'New Doc', content: {}, userId: 1, parentId: null };
       mockPrisma.document.create.mockResolvedValue(mockCreated);
       const result = await service.create(dto, 1);
       expect(result).toEqual(mockCreated);
       expect(mockPrisma.document.create).toHaveBeenCalledWith({
-        data: { title: 'New Doc', content: {}, userId: 1 },
+        data: { title: 'New Doc', content: {}, userId: 1, parentId: null },
       });
     });
 
     it('should create with provided content', async () => {
       const dto = { title: 'New Doc', content: { text: 'hello' } };
-      mockPrisma.document.create.mockResolvedValue({ id: 1, ...dto, userId: 1 });
+      mockPrisma.document.create.mockResolvedValue({ id: 1, ...dto, userId: 1, parentId: null });
       await service.create(dto, 1);
       expect(mockPrisma.document.create).toHaveBeenCalledWith({
-        data: { title: 'New Doc', content: { text: 'hello' }, userId: 1 },
+        data: { title: 'New Doc', content: { text: 'hello' }, userId: 1, parentId: null },
+      });
+    });
+
+    it('should create a document inside a parent folder', async () => {
+      const dto = { title: 'Nested Doc', parentId: 5 };
+      const mockCreated = { id: 2, title: 'Nested Doc', content: {}, userId: 1, parentId: 5 };
+      mockPrisma.document.create.mockResolvedValue(mockCreated);
+      const result = await service.create(dto, 1);
+      expect(result).toEqual(mockCreated);
+      expect(mockPrisma.document.create).toHaveBeenCalledWith({
+        data: { title: 'Nested Doc', content: {}, userId: 1, parentId: 5 },
       });
     });
   });

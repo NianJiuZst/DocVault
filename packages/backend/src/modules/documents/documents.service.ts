@@ -69,6 +69,7 @@ export class DocumentsService {
 				title: dto.title,
 				content: dto.content ?? {},
 				userId,
+				parentId: dto.parentId ?? null,
 			},
 		});
 	}
