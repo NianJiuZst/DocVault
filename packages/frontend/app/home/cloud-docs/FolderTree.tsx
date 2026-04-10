@@ -15,6 +15,8 @@ interface FolderTreeProps {
   onDocClick?: (id: number) => void;
 }
 
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
 export default function FolderTree({ onDocClick }: FolderTreeProps) {
   const [tree, setTree] = useState<TreeNode[]>([]);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
@@ -32,7 +34,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
   const fetchTree = async () => {
     setLoading(true);
     try {
-      const res = await fetch("http://localhost:3001/documents/tree", {
+      const res = await fetch(`${API_BASE_URL}/documents/tree`, {
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to fetch tree");
@@ -63,7 +65,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
     if (!newFolderName.trim()) return;
     setCreateError(null);
     try {
-      const res = await fetch("http://localhost:3001/documents/folder", {
+      const res = await fetch(`${API_BASE_URL}/documents/folder`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
