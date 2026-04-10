@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface TreeNode {
@@ -25,6 +25,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
   const [newFolderName, setNewFolderName] = useState("");
   const [newFolderParent, setNewFolderParent] = useState<number | undefined>(undefined);
   const [createError, setCreateError] = useState<string | null>(null);
+  const lastCreatedParentRef = useRef<number | undefined>(undefined);
   const router = useRouter();
 
   useEffect(() => {
@@ -40,8 +41,24 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
       if (!res.ok) throw new Error("Failed to fetch tree");
       const data: TreeNode[] = await res.json();
       setTree(data);
+      // Auto-expand parents of newly created folders so users see what they created
+      setExpanded((prev) => {
+        const next = new Set(prev);
+        const expandParents = (nodes: TreeNode[], targetParentId: number | undefined) => {
+          for (const node of nodes) {
+            if (targetParentId !== undefined && node.id === targetParentId && !next.has(node.id)) {
+              next.add(node.id);
+            }
+            if (node.children?.length) {
+              expandParents(node.children, targetParentId);
+            }
+          }
+        };
+        expandParents(data, lastCreatedParentRef.current);
+        return next;
+      });
     } catch {
-      // Silently fail — sidebar is non-critical
+      setCreateError("Failed to load tree, please refresh");
     } finally {
       setLoading(false);
     }
@@ -75,6 +92,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
         }),
       });
       if (!res.ok) throw new Error("Failed to create folder");
+      lastCreatedParentRef.current = newFolderParent;
       setNewFolderName("");
       setCreatingFolder(false);
       setNewFolderParent(undefined);
@@ -121,7 +139,7 @@ export default function FolderTree({ onDocClick }: FolderTreeProps) {
           </span>
         </div>
 
-        {node.isFolder && isExpanded && node.children.length > 0 && (
+        {node.isFolder && isExpanded && (node.children?.length ?? 0) > 0 && (
           <div>
             {node.children.map((child) => renderNode(child, depth + 1))}
           </div>
